@@ -243,6 +243,10 @@ export default function ImportPage() {
         <div className="flex flex-wrap gap-2">
           {[
             {
+              label: "HASPA (DE)",
+              opts: { delimiter: ";", date_column: "Buchungstag", date_format: "%d.%m.%y", amount_column: "Betrag", decimal_separator: ",", thousands_separator: ".", description_columns: "Beguenstigter/Zahlungspflichtiger,Verwendungszweck", description_join: " | ", skip_rows: 0, encoding: "latin-1" },
+            },
+            {
               label: "Deutsche Bank (DE)",
               opts: { delimiter: ";", date_column: "Buchungstag", date_format: "%d.%m.%Y", amount_column: "Betrag (EUR)", decimal_separator: ",", thousands_separator: ".", description_columns: "Auftraggeber / Beguenstigter,Verwendungszweck", skip_rows: 4 },
             },
