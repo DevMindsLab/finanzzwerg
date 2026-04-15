@@ -101,10 +101,34 @@ check_prerequisites() {
     fi
   fi
 
-  # Required utilities
+  # Required utilities — auto-install any that are missing.
+  # detect_os() hasn't run yet, so we do a minimal package-manager probe here.
+  local missing=()
   for cmd in curl grep sed awk; do
-    command -v "$cmd" &>/dev/null || die "'$cmd' is not installed. Please install it first."
+    command -v "$cmd" &>/dev/null || missing+=("$cmd")
   done
+
+  if [[ ${#missing[@]} -gt 0 ]]; then
+    info "Installing missing utilities: ${missing[*]}"
+    if command -v apt-get &>/dev/null; then
+      $SUDO apt-get update -qq
+      $SUDO apt-get install -y -qq "${missing[@]}"
+    elif command -v dnf &>/dev/null; then
+      $SUDO dnf install -y -q "${missing[@]}"
+    elif command -v yum &>/dev/null; then
+      $SUDO yum install -y -q "${missing[@]}"
+    elif command -v pacman &>/dev/null; then
+      $SUDO pacman -Sy --noconfirm --needed "${missing[@]}"
+    elif command -v zypper &>/dev/null; then
+      $SUDO zypper --non-interactive install "${missing[@]}"
+    else
+      die "Cannot auto-install ${missing[*]}: no supported package manager found.\nPlease install them manually and re-run."
+    fi
+    # Verify everything is now available
+    for cmd in "${missing[@]}"; do
+      command -v "$cmd" &>/dev/null || die "Failed to install '$cmd'. Please install it manually."
+    done
+  fi
   ok "Core utilities present"
 }
 
