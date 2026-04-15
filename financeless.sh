@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # =============================================================================
-#  Financeless — One-click installer
+#  Financeless — Management script
+#  Usage: ./financeless.sh [install|start|stop|update|uninstall]
+#
 #  Supports: Ubuntu · Debian · Linux Mint · Fedora · RHEL/CentOS/Alma/Rocky
 #            Arch · Manjaro · openSUSE Leap/Tumbleweed
 # =============================================================================
@@ -38,7 +40,7 @@ banner() {
 EOF
   echo -e "${NC}"
   echo -e "  ${BOLD}Self-hosted personal finance management  •  v0.1.0${NC}"
-  echo -e "  ${DIM}https://github.com/your-org/financeless${NC}"
+  echo -e "  ${DIM}Usage: ./financeless.sh [install|start|stop|update|uninstall]${NC}"
   echo ""
   divider
 }
@@ -52,45 +54,37 @@ COMPOSE_FILE="$SCRIPT_DIR/docker-compose.yml"
 FRONTEND_PORT=80
 BACKEND_PORT=8000
 DB_PORT=5432
+COMMAND="${1:-install}"
 
 SUDO=""
-# FIX 1: Use an array for the compose command so "docker compose" (two words)
-# expands correctly regardless of IFS. Usage: "${DOCKER_CMD[@]}" ...
 DOCKER_CMD=()
-
 NEED_GROUP_RELOAD=false
 
-# These are populated by detect_os():
+# Populated by detect_os() during install / uninstall:
 PKG_FAMILY=""
 PKG_MANAGER=""
-# FIX 2: Separate variables for the Docker repo name and release codename
-# so derived distros (Mint, Kali, …) map to their upstream correctly.
-DOCKER_REPO_DISTRO=""   # "ubuntu" or "debian"
-DOCKER_CODENAME=""      # Ubuntu/Debian release codename for the apt repo
+DOCKER_REPO_DISTRO=""
+DOCKER_CODENAME=""
 
 # =============================================================================
-#  STEP 0 — Sanity checks
+#  SHARED — Prerequisites
 # =============================================================================
 check_prerequisites() {
   section "Checking prerequisites"
 
-  # Bash ≥ 4 (required for lowercase ${var,,} and arrays)
   if (( BASH_VERSINFO[0] < 4 )); then
     die "Bash 4+ is required (found ${BASH_VERSION}). Please upgrade bash."
   fi
 
-  # Must be run from the project root
   [[ -f "$COMPOSE_FILE" ]] \
-    || die "docker-compose.yml not found.\nRun this script from the Financeless project root:\n\n  cd /path/to/financeless && bash install.sh"
+    || die "docker-compose.yml not found.\nRun this script from the Financeless project root:\n\n  cd /path/to/financeless && bash financeless.sh"
 
-  # Privilege escalation
   if [[ $EUID -eq 0 ]]; then
     SUDO=""
     warn "Running as root — Docker will be installed system-wide."
   else
     if command -v sudo &>/dev/null; then
       SUDO="sudo"
-      # Pre-validate sudo so the password prompt happens here, not mid-script
       if ! sudo -n true 2>/dev/null; then
         warn "sudo will be needed — you may be prompted for your password."
         sudo -v || die "Could not obtain sudo privileges."
@@ -101,39 +95,39 @@ check_prerequisites() {
     fi
   fi
 
-  # Required utilities — auto-install any that are missing.
-  # detect_os() hasn't run yet, so we do a minimal package-manager probe here.
-  local missing=()
-  for cmd in curl grep sed awk; do
-    command -v "$cmd" &>/dev/null || missing+=("$cmd")
-  done
-
-  if [[ ${#missing[@]} -gt 0 ]]; then
-    info "Installing missing utilities: ${missing[*]}"
-    if command -v apt-get &>/dev/null; then
-      $SUDO apt-get update -qq
-      $SUDO apt-get install -y -qq "${missing[@]}"
-    elif command -v dnf &>/dev/null; then
-      $SUDO dnf install -y -q "${missing[@]}"
-    elif command -v yum &>/dev/null; then
-      $SUDO yum install -y -q "${missing[@]}"
-    elif command -v pacman &>/dev/null; then
-      $SUDO pacman -Sy --noconfirm --needed "${missing[@]}"
-    elif command -v zypper &>/dev/null; then
-      $SUDO zypper --non-interactive install "${missing[@]}"
-    else
-      die "Cannot auto-install ${missing[*]}: no supported package manager found.\nPlease install them manually and re-run."
-    fi
-    # Verify everything is now available
-    for cmd in "${missing[@]}"; do
-      command -v "$cmd" &>/dev/null || die "Failed to install '$cmd'. Please install it manually."
+  # For install only: auto-install missing core utilities
+  if [[ "$COMMAND" == "install" ]]; then
+    local missing=()
+    for cmd in curl grep sed awk; do
+      command -v "$cmd" &>/dev/null || missing+=("$cmd")
     done
+    if [[ ${#missing[@]} -gt 0 ]]; then
+      info "Installing missing utilities: ${missing[*]}"
+      if command -v apt-get &>/dev/null; then
+        $SUDO apt-get update -qq
+        $SUDO apt-get install -y -qq "${missing[@]}"
+      elif command -v dnf &>/dev/null; then
+        $SUDO dnf install -y -q "${missing[@]}"
+      elif command -v yum &>/dev/null; then
+        $SUDO yum install -y -q "${missing[@]}"
+      elif command -v pacman &>/dev/null; then
+        $SUDO pacman -Sy --noconfirm --needed "${missing[@]}"
+      elif command -v zypper &>/dev/null; then
+        $SUDO zypper --non-interactive install "${missing[@]}"
+      else
+        die "Cannot auto-install ${missing[*]}: no supported package manager found.\nPlease install them manually and re-run."
+      fi
+      for cmd in "${missing[@]}"; do
+        command -v "$cmd" &>/dev/null || die "Failed to install '$cmd'. Please install it manually."
+      done
+    fi
   fi
+
   ok "Core utilities present"
 }
 
 # =============================================================================
-#  STEP 1 — Detect OS
+#  INSTALL/UNINSTALL — Detect OS
 # =============================================================================
 detect_os() {
   section "Detecting operating system"
@@ -141,7 +135,6 @@ detect_os() {
   local os_id="" os_like="" pretty_name=""
 
   if [[ -f /etc/os-release ]]; then
-    # Source into local variables to avoid polluting the global namespace
     os_id="$(     . /etc/os-release && echo "${ID:-}"          )"
     os_like="$(   . /etc/os-release && echo "${ID_LIKE:-}"     )"
     pretty_name="$( . /etc/os-release && echo "${PRETTY_NAME:-}" )"
@@ -155,25 +148,21 @@ detect_os() {
   os_like="${os_like,,}"
 
   case "$os_id" in
-    # ── Debian / Ubuntu family ──────────────────────────────────────────────
     ubuntu|pop|neon)
       PKG_FAMILY="debian"; PKG_MANAGER="apt-get"
       DOCKER_REPO_DISTRO="ubuntu"
       DOCKER_CODENAME="$(. /etc/os-release && echo "${VERSION_CODENAME:-}")"
       ;;
-    # FIX 2a: Mint ships UBUNTU_CODENAME; its own VERSION_CODENAME is wrong
     linuxmint|elementary|zorin)
       PKG_FAMILY="debian"; PKG_MANAGER="apt-get"
       DOCKER_REPO_DISTRO="ubuntu"
       DOCKER_CODENAME="$(. /etc/os-release && echo "${UBUNTU_CODENAME:-${VERSION_CODENAME:-}}")"
       ;;
-    # FIX 2b: Kali/Parrot use the Debian repo, not Ubuntu
     debian|raspbian|kali|parrot)
       PKG_FAMILY="debian"; PKG_MANAGER="apt-get"
       DOCKER_REPO_DISTRO="debian"
       DOCKER_CODENAME="$(. /etc/os-release && echo "${VERSION_CODENAME:-}")"
       ;;
-    # ── RPM family ──────────────────────────────────────────────────────────
     fedora)
       PKG_FAMILY="fedora"; PKG_MANAGER="dnf"
       ;;
@@ -181,15 +170,12 @@ detect_os() {
       PKG_FAMILY="rhel"
       PKG_MANAGER="$(command -v dnf &>/dev/null && echo dnf || echo yum)"
       ;;
-    # ── Arch family ─────────────────────────────────────────────────────────
     arch|manjaro|endeavouros|garuda|artix)
       PKG_FAMILY="arch"; PKG_MANAGER="pacman"
       ;;
-    # ── SUSE family ─────────────────────────────────────────────────────────
     opensuse*|sles)
       PKG_FAMILY="suse"; PKG_MANAGER="zypper"
       ;;
-    # ── Fallback: check ID_LIKE ──────────────────────────────────────────────
     *)
       if   echo "$os_like" | grep -qw "ubuntu";  then
         PKG_FAMILY="debian"; PKG_MANAGER="apt-get"
@@ -213,25 +199,19 @@ detect_os() {
       ;;
   esac
 
-  [[ -n "$DOCKER_CODENAME" ]] || true  # codename only needed for Debian family
-
   ok "Detected: ${BOLD}${pretty_name:-$os_id}${NC} (family: ${PKG_FAMILY}, pkg: ${PKG_MANAGER})"
 }
 
 # =============================================================================
-#  STEP 2 — Install Docker
+#  INSTALL — Install Docker per distro
 # =============================================================================
 install_docker_debian() {
-  # FIX 2c: Use $DOCKER_REPO_DISTRO and $DOCKER_CODENAME set by detect_os()
   info "Installing Docker for ${DOCKER_REPO_DISTRO} (${DOCKER_CODENAME})..."
 
   if [[ -z "$DOCKER_CODENAME" ]]; then
     die "Could not determine the release codename needed for the Docker apt repo.\nSet DOCKER_CODENAME manually and re-run."
   fi
 
-  # Warn if the codename is not in Docker's known-supported list.
-  # New distro releases (e.g. Debian Trixie, Ubuntu Plucky) may lag
-  # a few weeks before Docker publishes packages for them.
   local known_codenames="buster bullseye bookworm trixie focal jammy noble oracular plucky"
   if ! echo "$known_codenames" | grep -qw "$DOCKER_CODENAME"; then
     warn "Release codename '${DOCKER_CODENAME}' is not in the known-supported list."
@@ -253,8 +233,6 @@ install_docker_debian() {
 https://download.docker.com/linux/${DOCKER_REPO_DISTRO} ${DOCKER_CODENAME} stable" \
     | $SUDO tee /etc/apt/sources.list.d/docker.list > /dev/null
 
-  # Run without -qq here so a 404 (unknown codename) prints a readable error
-  # rather than silently failing inside the set -e trap.
   $SUDO apt-get update
   $SUDO apt-get install -y -qq \
     docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
@@ -280,9 +258,6 @@ install_docker_rhel() {
 
 install_docker_arch() {
   info "Installing Docker (Arch)..."
-  # On Arch (rolling release), -Sy alone (sync DB without upgrade) risks
-  # partial upgrades when the installed packages are stale.  -Syu ensures
-  # the whole system is consistent before new packages are added.
   $SUDO pacman -Syu --noconfirm --needed docker docker-compose
 }
 
@@ -291,6 +266,7 @@ install_docker_suse() {
   $SUDO zypper --non-interactive install docker docker-compose
 }
 
+# Full Docker install + daemon start (used by install command)
 ensure_docker() {
   section "Checking Docker"
 
@@ -310,9 +286,6 @@ ensure_docker() {
     ok "Docker installed"
   fi
 
-  # FIX 1: Populate DOCKER_CMD as an array, not a plain string.
-  # This ensures "docker compose" (two words) is always word-split correctly
-  # even if the caller has a non-default IFS.
   if docker compose version &>/dev/null 2>&1; then
     DOCKER_CMD=("docker" "compose")
     ok "Docker Compose v2 plugin detected"
@@ -323,38 +296,86 @@ ensure_docker() {
     die "Docker Compose not found.\nhttps://docs.docker.com/compose/install/"
   fi
 
-  # Start & enable the daemon
   if ! $SUDO systemctl is-active --quiet docker 2>/dev/null; then
     info "Starting Docker daemon..."
     $SUDO systemctl enable --now docker 2>/dev/null || true
-    # systemctl --now may not start SysV-init-backed services; fall back to
-    # the legacy `service` command in that case.
     if ! $SUDO systemctl is-active --quiet docker 2>/dev/null; then
       $SUDO service docker start 2>/dev/null || true
     fi
     sleep 2
-    # Verify the daemon is actually reachable via the socket
-    if ! docker info &>/dev/null; then
-      die "Docker daemon did not start.\nTry manually: service docker start\nThen re-run this script."
-    fi
+    docker info &>/dev/null || die "Docker daemon did not start.\nTry manually: service docker start\nThen re-run this script."
     ok "Docker daemon started"
   else
     ok "Docker daemon is running"
   fi
 
-  # Add current user to the docker group so they can run docker without sudo
   if [[ $EUID -ne 0 ]] && ! groups "$USER" | grep -qw docker; then
     info "Adding ${USER} to the 'docker' group..."
     $SUDO usermod -aG docker "$USER"
     NEED_GROUP_RELOAD=true
     warn "Group change takes effect after re-login. Using sudo for Docker in this session."
-    # Prepend sudo to the array
+    DOCKER_CMD=("sudo" "${DOCKER_CMD[@]}")
+  fi
+}
+
+# Lightweight Docker check (used by start/stop/update/uninstall)
+load_docker_cmd() {
+  section "Checking Docker"
+
+  if ! command -v docker &>/dev/null; then
+    die "Docker is not installed. Run first:\n  ./financeless.sh install"
+  fi
+
+  if ! docker info &>/dev/null 2>&1; then
+    info "Docker daemon not running — starting..."
+    $SUDO systemctl enable --now docker 2>/dev/null || true
+    if ! $SUDO systemctl is-active --quiet docker 2>/dev/null; then
+      $SUDO service docker start 2>/dev/null || true
+    fi
+    sleep 2
+    docker info &>/dev/null \
+      || die "Docker daemon could not be started.\nTry: service docker start"
+    ok "Docker daemon started"
+  else
+    ok "Docker daemon is running"
+  fi
+
+  if docker compose version &>/dev/null 2>&1; then
+    DOCKER_CMD=("docker" "compose")
+  elif command -v docker-compose &>/dev/null; then
+    DOCKER_CMD=("docker-compose")
+  else
+    die "Docker Compose not found."
+  fi
+
+  if [[ $EUID -ne 0 ]] && ! groups "$USER" | grep -qw docker; then
     DOCKER_CMD=("sudo" "${DOCKER_CMD[@]}")
   fi
 }
 
 # =============================================================================
-#  STEP 3 — Generate .env
+#  INSTALL — Ensure frontend package-lock.json exists
+# =============================================================================
+prepare_lockfile() {
+  section "Checking frontend lockfile"
+
+  if [[ -f "$SCRIPT_DIR/frontend/package-lock.json" ]]; then
+    ok "frontend/package-lock.json present"
+    return
+  fi
+
+  warn "frontend/package-lock.json missing — generating via Docker (no Node.js required on host)..."
+  docker run --rm \
+    -v "$SCRIPT_DIR/frontend:/app" \
+    -w /app \
+    node:20-alpine \
+    npm install --package-lock-only \
+    || die "Failed to generate frontend/package-lock.json. Check your internet connection and try again."
+  ok "frontend/package-lock.json generated"
+}
+
+# =============================================================================
+#  INSTALL — Generate .env
 # =============================================================================
 generate_env() {
   section "Configuring environment"
@@ -364,7 +385,7 @@ generate_env() {
     return
   fi
 
-  local secret_key db_password
+  local secret_key db_password git_url
   if command -v openssl &>/dev/null; then
     secret_key=$(openssl rand -hex 32)
     db_password=$(openssl rand -base64 18 | tr -d '/+=')
@@ -375,8 +396,16 @@ generate_env() {
     die "openssl or python3 is required to generate secrets."
   fi
 
+  # Auto-detect git remote URL
+  git_url="https://github.com/your-org/financeless"
+  if command -v git &>/dev/null && [[ -d "$SCRIPT_DIR/.git" ]]; then
+    local detected_url
+    detected_url="$(git -C "$SCRIPT_DIR" remote get-url origin 2>/dev/null || true)"
+    [[ -n "$detected_url" ]] && git_url="$detected_url"
+  fi
+
   cat > "$ENV_FILE" << EOF
-# ─── Generated by install.sh ──────────────────────────────────────────────────
+# ─── Generated by financeless.sh ──────────────────────────────────────────────
 # Edit this file to customise your installation.
 
 # ─── Database ─────────────────────────────────────────────────────────────────
@@ -390,24 +419,24 @@ CORS_ORIGINS=http://localhost,http://localhost:80,http://localhost:${BACKEND_POR
 
 # ─── Frontend ─────────────────────────────────────────────────────────────────
 VITE_API_URL=http://localhost:${BACKEND_PORT}
+
+# ─── Updates (used by ./financeless.sh update) ────────────────────────────────
+GIT_REPO_URL=${git_url}
 EOF
 
   ok ".env generated with strong random secrets"
 }
 
 # =============================================================================
-#  STEP 4 — Check ports
+#  INSTALL — Check ports
 # =============================================================================
 check_ports() {
   section "Checking port availability"
 
-  # FIX 3: Explicit quoted array elements — safe regardless of IFS
   local ports=("$FRONTEND_PORT" "$BACKEND_PORT" "$DB_PORT")
   local blocked=()
 
   for port in "${ports[@]}"; do
-    # FIX 5: Use plain `ss -tln` / `netstat -tln` — the -H flag is not
-    # universally available and is unnecessary when grepping anyway.
     if ss -tln 2>/dev/null | grep -q ":${port}\b" \
         || netstat -tln 2>/dev/null | grep -q ":${port} "; then
       blocked+=("$port")
@@ -424,24 +453,18 @@ check_ports() {
 }
 
 # =============================================================================
-#  STEP 5 — Build & start containers
+#  SHARED — Build & start containers
 # =============================================================================
 start_services() {
   section "Building and starting Financeless"
-
   cd "$SCRIPT_DIR"
-
-  # FIX 4: Removed the invalid pre-warm `docker compose build . --file ...`
-  # call that mixed docker-build flags with docker-compose syntax.
-  # The `up --build` below handles everything correctly.
   info "Building images and starting containers (this may take a few minutes on first run)..."
   "${DOCKER_CMD[@]}" -f "$COMPOSE_FILE" up --build -d
-
   ok "Containers started"
 }
 
 # =============================================================================
-#  STEP 6 — Wait for healthy services
+#  SHARED — Wait for healthy services
 # =============================================================================
 wait_for_services() {
   section "Waiting for services to become healthy"
@@ -478,10 +501,9 @@ wait_for_services() {
 }
 
 # =============================================================================
-#  STEP 7 — Print success summary
+#  SHARED — Print success summary
 # =============================================================================
 print_summary() {
-  # Human-readable form of the compose command for display
   local cmd_display="${DOCKER_CMD[*]}"
 
   divider
@@ -492,18 +514,25 @@ print_summary() {
   echo -e "    ${CYAN}Frontend${NC}   →  http://localhost"
   echo -e "    ${CYAN}API docs${NC}   →  http://localhost:${BACKEND_PORT}/api/docs"
   echo ""
-  echo -e "  ${BOLD}Useful commands${NC}"
+  echo -e "  ${BOLD}Management${NC}"
+  echo -e "    ${DIM}# Start containers${NC}"
+  echo -e "    ${BOLD}./financeless.sh start${NC}"
+  echo ""
+  echo -e "    ${DIM}# Stop containers${NC}"
+  echo -e "    ${BOLD}./financeless.sh stop${NC}"
+  echo ""
+  echo -e "    ${DIM}# Pull latest code and rebuild${NC}"
+  echo -e "    ${BOLD}./financeless.sh update${NC}"
+  echo ""
+  echo -e "    ${DIM}# Remove everything${NC}"
+  echo -e "    ${BOLD}./financeless.sh uninstall${NC}"
+  echo ""
+  echo -e "  ${BOLD}Logs & advanced${NC}"
   echo -e "    ${DIM}# Follow logs${NC}"
   echo -e "    ${BOLD}${cmd_display} -f ${COMPOSE_FILE} logs -f${NC}"
   echo ""
-  echo -e "    ${DIM}# Stop${NC}"
-  echo -e "    ${BOLD}${cmd_display} -f ${COMPOSE_FILE} down${NC}"
-  echo ""
   echo -e "    ${DIM}# Stop and wipe all data${NC}"
   echo -e "    ${BOLD}${cmd_display} -f ${COMPOSE_FILE} down -v${NC}"
-  echo ""
-  echo -e "    ${DIM}# Rebuild after code changes${NC}"
-  echo -e "    ${BOLD}${cmd_display} -f ${COMPOSE_FILE} up --build -d${NC}"
   echo ""
 
   if [[ "$NEED_GROUP_RELOAD" == "true" ]]; then
@@ -520,36 +549,264 @@ print_summary() {
 }
 
 # =============================================================================
-#  STEP 2b — Ensure frontend package-lock.json exists
+#  COMMAND — update
 # =============================================================================
-prepare_lockfile() {
-  section "Checking frontend lockfile"
-
-  if [[ -f "$SCRIPT_DIR/frontend/package-lock.json" ]]; then
-    ok "frontend/package-lock.json present"
-    return
+cmd_update() {
+  # Ensure git is available
+  if ! command -v git &>/dev/null; then
+    info "Installing git..."
+    if command -v apt-get &>/dev/null; then
+      $SUDO apt-get install -y -qq git
+    elif command -v dnf &>/dev/null; then
+      $SUDO dnf install -y -q git
+    elif command -v yum &>/dev/null; then
+      $SUDO yum install -y -q git
+    elif command -v pacman &>/dev/null; then
+      $SUDO pacman -S --noconfirm --needed git
+    elif command -v zypper &>/dev/null; then
+      $SUDO zypper --non-interactive install git
+    else
+      die "git is not installed and cannot be auto-installed."
+    fi
+    ok "git installed"
   fi
 
-  warn "frontend/package-lock.json missing — generating via Docker (no Node.js required on host)..."
-  docker run --rm \
-    -v "$SCRIPT_DIR/frontend:/app" \
-    -w /app \
-    node:20-alpine \
-    npm install --package-lock-only \
-    || die "Failed to generate frontend/package-lock.json. Check your internet connection and try again."
-  ok "frontend/package-lock.json generated"
+  # Read GIT_REPO_URL from .env
+  local git_url=""
+  if [[ -f "$ENV_FILE" ]]; then
+    git_url="$(grep -E '^GIT_REPO_URL=' "$ENV_FILE" 2>/dev/null \
+               | cut -d= -f2- | tr -d '"' | tr -d "'" | xargs 2>/dev/null || true)"
+  fi
+
+  section "Pulling latest code"
+
+  if [[ -d "$SCRIPT_DIR/.git" ]]; then
+    local before_hash after_hash
+    before_hash="$(git -C "$SCRIPT_DIR" rev-parse HEAD 2>/dev/null || true)"
+    info "Running git pull..."
+    git -C "$SCRIPT_DIR" pull --ff-only 2>&1 \
+      || warn "git pull failed — check for local modifications or network issues. Rebuilding with current code."
+    after_hash="$(git -C "$SCRIPT_DIR" rev-parse HEAD 2>/dev/null || true)"
+    if [[ "$before_hash" == "$after_hash" ]]; then
+      ok "Already up to date"
+    else
+      ok "Updated to $(git -C "$SCRIPT_DIR" rev-parse --short HEAD)"
+    fi
+  elif [[ -n "$git_url" ]]; then
+    warn "This directory is not a git repository."
+    warn "To enable git-based updates, clone first:"
+    echo -e "    git clone ${git_url} ."
+    warn "Rebuilding with current files."
+  else
+    warn "Not a git repository and GIT_REPO_URL is not set in .env."
+    warn "Rebuilding with current files only."
+  fi
+
+  section "Rebuilding containers"
+  cd "$SCRIPT_DIR"
+  info "Rebuilding images and restarting containers..."
+  "${DOCKER_CMD[@]}" -f "$COMPOSE_FILE" up --build -d
+  ok "Containers rebuilt and restarted"
+
+  wait_for_services
+  print_summary
+}
+
+# =============================================================================
+#  COMMAND — uninstall
+# =============================================================================
+cmd_uninstall() {
+  section "Uninstalling Financeless"
+
+  echo ""
+  echo -e "  ${RED}${BOLD}WARNING — The following will be permanently deleted:${NC}"
+  echo ""
+  echo -e "    • All Financeless containers"
+  echo -e "    • All data volumes (database, uploads) — ${BOLD}your data will be lost${NC}"
+  echo -e "    • Docker images for this project"
+  echo -e "    • The .env configuration file"
+  echo ""
+  echo -ne "  Type ${BOLD}yes${NC} to confirm: "
+  read -r confirmation
+  if [[ "$confirmation" != "yes" ]]; then
+    echo ""
+    info "Aborted — nothing was changed."
+    echo ""
+    exit 0
+  fi
+
+  # ── 1. Stop containers & remove volumes ────────────────────────────────────
+  section "Removing containers and volumes"
+
+  if command -v docker &>/dev/null && docker info &>/dev/null 2>&1; then
+    cd "$SCRIPT_DIR"
+
+    # Populate DOCKER_CMD without the section header
+    if docker compose version &>/dev/null 2>&1; then
+      DOCKER_CMD=("docker" "compose")
+    else
+      DOCKER_CMD=("docker-compose")
+    fi
+    if [[ $EUID -ne 0 ]] && ! groups "$USER" | grep -qw docker 2>/dev/null; then
+      DOCKER_CMD=("sudo" "${DOCKER_CMD[@]}")
+    fi
+
+    info "Stopping containers and removing volumes..."
+    "${DOCKER_CMD[@]}" -f "$COMPOSE_FILE" down -v --remove-orphans 2>/dev/null || true
+    ok "Containers and volumes removed"
+
+    # ── 2. Remove project Docker images ──────────────────────────────────────
+    section "Removing Docker images"
+    local images=("financeless-backend" "financeless-frontend")
+    local removed=0
+    for img in "${images[@]}"; do
+      if docker image inspect "$img" &>/dev/null 2>&1; then
+        docker image rm "$img" 2>/dev/null && (( removed++ )) || true
+      fi
+    done
+    if (( removed > 0 )); then
+      ok "Removed ${removed} project image(s)"
+    else
+      ok "No project images found"
+    fi
+  else
+    warn "Docker is not running — skipping container/image cleanup."
+  fi
+
+  # ── 3. Remove .env ──────────────────────────────────────────────────────────
+  section "Removing configuration"
+
+  if [[ -f "$ENV_FILE" ]]; then
+    rm "$ENV_FILE"
+    ok ".env removed"
+  else
+    ok "No .env found"
+  fi
+
+  # ── 4. Optionally remove Docker itself ─────────────────────────────────────
+  echo ""
+  echo -e "  ${YELLOW}${BOLD}Optional:${NC} Remove Docker from this system?"
+  echo -e "  ${DIM}(Skip this if Docker is used by other projects)${NC}"
+  echo -ne "  Remove Docker? [y/N] "
+  read -r remove_docker
+  if [[ "${remove_docker,,}" == "y" ]]; then
+    section "Removing Docker"
+
+    if command -v apt-get &>/dev/null; then
+      $SUDO apt-get remove -y --purge \
+        docker-ce docker-ce-cli containerd.io \
+        docker-buildx-plugin docker-compose-plugin 2>/dev/null || true
+      $SUDO apt-get autoremove -y 2>/dev/null || true
+      $SUDO rm -f /etc/apt/sources.list.d/docker.list
+      $SUDO rm -f /etc/apt/keyrings/docker.gpg
+      ok "Docker removed (apt)"
+    elif command -v dnf &>/dev/null; then
+      $SUDO dnf remove -y \
+        docker-ce docker-ce-cli containerd.io \
+        docker-buildx-plugin docker-compose-plugin 2>/dev/null || true
+      ok "Docker removed (dnf)"
+    elif command -v yum &>/dev/null; then
+      $SUDO yum remove -y \
+        docker-ce docker-ce-cli containerd.io \
+        docker-buildx-plugin docker-compose-plugin 2>/dev/null || true
+      ok "Docker removed (yum)"
+    elif command -v pacman &>/dev/null; then
+      $SUDO pacman -Rs --noconfirm docker docker-compose 2>/dev/null || true
+      ok "Docker removed (pacman)"
+    elif command -v zypper &>/dev/null; then
+      $SUDO zypper remove -y docker docker-compose 2>/dev/null || true
+      ok "Docker removed (zypper)"
+    else
+      warn "Could not detect package manager — please remove Docker manually."
+    fi
+
+    # Remove Docker data directory
+    if [[ -d /var/lib/docker ]]; then
+      $SUDO rm -rf /var/lib/docker
+      ok "Docker data directory removed"
+    fi
+  fi
+
+  # ── 5. Summary ───────────────────────────────────────────────────────────────
+  divider
+  echo ""
+  echo -e "  ${GREEN}${BOLD}Financeless has been uninstalled.${NC}"
+  echo ""
+  echo -e "  The project files in ${BOLD}${SCRIPT_DIR}${NC} were left intact."
+  echo -e "  To remove them as well:"
+  echo ""
+  echo -e "    ${BOLD}rm -rf ${SCRIPT_DIR}${NC}"
+  echo ""
+  divider
+  echo ""
 }
 
 # =============================================================================
 #  MAIN
 # =============================================================================
 banner
-check_prerequisites
-detect_os
-ensure_docker
-prepare_lockfile
-generate_env
-check_ports
-start_services
-wait_for_services
-print_summary
+
+case "$COMMAND" in
+  # ── First-time installation ─────────────────────────────────────────────────
+  install)
+    check_prerequisites
+    detect_os
+    ensure_docker
+    prepare_lockfile
+    generate_env
+    check_ports
+    start_services
+    wait_for_services
+    print_summary
+    ;;
+
+  # ── Start stopped containers ────────────────────────────────────────────────
+  start)
+    check_prerequisites
+    load_docker_cmd
+    section "Starting Financeless"
+    cd "$SCRIPT_DIR"
+    info "Starting containers..."
+    "${DOCKER_CMD[@]}" -f "$COMPOSE_FILE" up -d
+    ok "Containers started"
+    wait_for_services
+    print_summary
+    ;;
+
+  # ── Stop running containers ─────────────────────────────────────────────────
+  stop)
+    check_prerequisites
+    load_docker_cmd
+    section "Stopping Financeless"
+    cd "$SCRIPT_DIR"
+    info "Stopping containers..."
+    "${DOCKER_CMD[@]}" -f "$COMPOSE_FILE" down
+    divider
+    echo ""
+    echo -e "  ${GREEN}${BOLD}Financeless stopped.${NC}"
+    echo ""
+    echo -e "  Restart:        ${BOLD}./financeless.sh start${NC}"
+    echo -e "  Wipe all data:  ${BOLD}${DOCKER_CMD[*]} -f ${COMPOSE_FILE} down -v${NC}"
+    echo ""
+    divider
+    echo ""
+    ;;
+
+  # ── Pull latest code and rebuild ────────────────────────────────────────────
+  update)
+    check_prerequisites
+    load_docker_cmd
+    cmd_update
+    ;;
+
+  # ── Remove everything ───────────────────────────────────────────────────────
+  uninstall)
+    check_prerequisites
+    cmd_uninstall
+    ;;
+
+  # ── Unknown command ─────────────────────────────────────────────────────────
+  *)
+    die "Unknown command '${COMMAND}'.\n\n  Usage: ./financeless.sh [install|start|stop|update|uninstall]\n\n    install    — First-time setup (default)\n    start      — Start stopped containers\n    stop       — Stop running containers\n    update     — Pull latest code and rebuild\n    uninstall  — Remove everything"
+    ;;
+esac
