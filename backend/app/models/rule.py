@@ -21,7 +21,7 @@ class Rule(Base):
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     pattern: Mapped[str] = mapped_column(String(500), nullable=False)
     match_type: Mapped[MatchType] = mapped_column(
-        Enum(MatchType, name="matchtype"),
+        Enum(MatchType, name="matchtype", values_callable=lambda x: [e.value for e in x]),
         default=MatchType.SUBSTRING,
         nullable=False,
     )
