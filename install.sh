@@ -302,8 +302,17 @@ ensure_docker() {
   # Start & enable the daemon
   if ! $SUDO systemctl is-active --quiet docker 2>/dev/null; then
     info "Starting Docker daemon..."
-    $SUDO systemctl enable --now docker
+    $SUDO systemctl enable --now docker 2>/dev/null || true
+    # systemctl --now may not start SysV-init-backed services; fall back to
+    # the legacy `service` command in that case.
+    if ! $SUDO systemctl is-active --quiet docker 2>/dev/null; then
+      $SUDO service docker start 2>/dev/null || true
+    fi
     sleep 2
+    # Verify the daemon is actually reachable via the socket
+    if ! docker info &>/dev/null; then
+      die "Docker daemon did not start.\nTry manually: service docker start\nThen re-run this script."
+    fi
     ok "Docker daemon started"
   else
     ok "Docker daemon is running"
