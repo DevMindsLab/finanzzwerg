@@ -29,7 +29,7 @@ class Transaction(Base):
         Integer, ForeignKey("import_jobs.id"), nullable=True, index=True
     )
     status: Mapped[TransactionStatus] = mapped_column(
-        Enum(TransactionStatus, name="transactionstatus"),
+        Enum(TransactionStatus, name="transactionstatus", values_callable=lambda x: [e.value for e in x]),
         default=TransactionStatus.UNCATEGORIZED,
         nullable=False,
         index=True,

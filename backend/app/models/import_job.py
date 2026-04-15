@@ -21,7 +21,7 @@ class ImportJob(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     filename: Mapped[str] = mapped_column(String(255), nullable=False)
     status: Mapped[ImportJobStatus] = mapped_column(
-        Enum(ImportJobStatus, name="importjobstatus"),
+        Enum(ImportJobStatus, name="importjobstatus", values_callable=lambda x: [e.value for e in x]),
         default=ImportJobStatus.PENDING,
         nullable=False,
     )
