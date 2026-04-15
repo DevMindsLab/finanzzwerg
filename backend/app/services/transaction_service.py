@@ -2,7 +2,7 @@ import math
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import extract, func
+from sqlalchemy import case, extract, func
 from sqlalchemy.orm import Session, joinedload
 
 from app.models.category import Category
@@ -175,10 +175,10 @@ class TransactionService:
                 extract("year", Transaction.date).label("year"),
                 extract("month", Transaction.date).label("month"),
                 func.sum(
-                    func.case((Transaction.amount > 0, Transaction.amount), else_=0)
+                    case((Transaction.amount > 0, Transaction.amount), else_=0)
                 ).label("income"),
                 func.sum(
-                    func.case((Transaction.amount < 0, func.abs(Transaction.amount)), else_=0)
+                    case((Transaction.amount < 0, func.abs(Transaction.amount)), else_=0)
                 ).label("expenses"),
                 func.count(Transaction.id).label("cnt"),
             )

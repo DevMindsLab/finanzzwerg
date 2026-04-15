@@ -8,6 +8,7 @@ split debit/credit columns, and automatic deduplication via SHA-256 hashing.
 import hashlib
 import io
 import logging
+import math
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal, InvalidOperation
@@ -141,7 +142,7 @@ def parse_csv(content: bytes, profile: CSVProfile) -> ParseResult:
     # ── 3. Parse row by row ──────────────────────────────────────────────────
     for idx, row in df.iterrows():
         row_num = int(idx) + 1  # type: ignore[arg-type]
-        raw_data = row.to_dict()
+        raw_data = {k: (None if isinstance(v, float) and math.isnan(v) else v) for k, v in row.to_dict().items()}
 
         # ── Date ──────────────────────────────────────────────────────────
         raw_date = str(row[profile.date_column]).strip()
