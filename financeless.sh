@@ -415,7 +415,7 @@ POSTGRES_DB=financeless
 
 # ─── Backend ──────────────────────────────────────────────────────────────────
 SECRET_KEY=${secret_key}
-CORS_ORIGINS=http://localhost,http://localhost:80,http://localhost:${BACKEND_PORT}
+CORS_ORIGINS=["http://localhost","http://localhost:80","http://localhost:${BACKEND_PORT}"]
 
 # ─── Frontend ─────────────────────────────────────────────────────────────────
 VITE_API_URL=http://localhost:${BACKEND_PORT}
