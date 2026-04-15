@@ -520,12 +520,34 @@ print_summary() {
 }
 
 # =============================================================================
+#  STEP 2b — Ensure frontend package-lock.json exists
+# =============================================================================
+prepare_lockfile() {
+  section "Checking frontend lockfile"
+
+  if [[ -f "$SCRIPT_DIR/frontend/package-lock.json" ]]; then
+    ok "frontend/package-lock.json present"
+    return
+  fi
+
+  warn "frontend/package-lock.json missing — generating via Docker (no Node.js required on host)..."
+  docker run --rm \
+    -v "$SCRIPT_DIR/frontend:/app" \
+    -w /app \
+    node:20-alpine \
+    npm install --package-lock-only \
+    || die "Failed to generate frontend/package-lock.json. Check your internet connection and try again."
+  ok "frontend/package-lock.json generated"
+}
+
+# =============================================================================
 #  MAIN
 # =============================================================================
 banner
 check_prerequisites
 detect_os
 ensure_docker
+prepare_lockfile
 generate_env
 check_ports
 start_services
