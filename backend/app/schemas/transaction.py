@@ -1,6 +1,4 @@
-from __future__ import annotations
-
-from datetime import date, datetime
+from datetime import date as Date, datetime
 from decimal import Decimal
 
 from pydantic import BaseModel, Field
@@ -10,7 +8,7 @@ from app.schemas.category import CategoryResponse
 
 
 class TransactionBase(BaseModel):
-    date: date
+    date: Date
     amount: Decimal = Field(..., decimal_places=2)
     description: str = Field(..., min_length=1, max_length=500)
 
@@ -23,7 +21,7 @@ class TransactionCreate(TransactionBase):
 
 
 class TransactionUpdate(BaseModel):
-    date: date | None = None
+    date: Date | None = None
     amount: Decimal | None = Field(default=None, decimal_places=2)
     description: str | None = Field(default=None, min_length=1, max_length=500)
     category_id: int | None = None
