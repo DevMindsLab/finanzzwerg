@@ -1,7 +1,7 @@
 import { forwardRef } from "react";
 import { cn } from "@/lib/utils";
 
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'prefix'> {
   label?: string;
   error?: string;
   hint?: string;
@@ -33,8 +33,8 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
               "focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500",
               "disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed",
               error && "border-rose-400 focus:border-rose-400 focus:ring-rose-400",
-              prefix && "pl-9",
-              suffix && "pr-9",
+              prefix ? "pl-9" : undefined,
+              suffix ? "pr-9" : undefined,
               className,
             )}
             {...props}

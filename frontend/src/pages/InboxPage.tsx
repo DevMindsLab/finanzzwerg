@@ -11,14 +11,13 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import { CheckSquare, RefreshCw, Zap } from "lucide-react";
+import { CheckSquare, Zap } from "lucide-react";
 import { transactionsApi } from "@/api/transactions";
 import { rulesApi } from "@/api/rules";
 import { categoriesApi } from "@/api/categories";
 import type { Category, Transaction } from "@/types";
 import { formatCurrency, formatDate, amountColor } from "@/lib/utils";
 import Button from "@/components/ui/Button";
-import Badge from "@/components/ui/Badge";
 import Modal from "@/components/ui/Modal";
 import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";

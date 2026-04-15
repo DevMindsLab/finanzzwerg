@@ -9,7 +9,6 @@ import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
-import Badge from "@/components/ui/Badge";
 
 const MATCH_TYPE_OPTIONS = [
   { value: "substring", label: "Substring (contains)" },
