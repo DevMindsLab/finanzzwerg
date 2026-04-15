@@ -8,10 +8,10 @@
  * - Keyboard: Tab to next row, Enter to confirm.
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import { CheckSquare, Zap } from "lucide-react";
+import { CheckSquare, Search, Zap } from "lucide-react";
 import { transactionsApi } from "@/api/transactions";
 import { rulesApi } from "@/api/rules";
 import { categoriesApi } from "@/api/categories";
@@ -60,14 +60,24 @@ function CategoryDropdown({
 export default function InboxPage() {
   const qc = useQueryClient();
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [bulkCategory, setBulkCategory] = useState<string>("");
   const [ruleSuggestion, setRuleSuggestion] = useState<RuleSuggestion | null>(null);
   const [rulePattern, setRulePattern] = useState("");
 
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
   const { data, isLoading } = useQuery({
-    queryKey: ["inbox", page],
-    queryFn: () => transactionsApi.inbox(page, 50),
+    queryKey: ["inbox", page, debouncedSearch],
+    queryFn: () => transactionsApi.inbox(page, 50, debouncedSearch || undefined),
     placeholderData: (prev) => prev,
   });
 
@@ -156,12 +166,22 @@ export default function InboxPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex items-center justify-between gap-4">
+        <div className="shrink-0">
           <h1 className="text-2xl font-bold text-slate-900">Inbox</h1>
           <p className="text-sm text-slate-500 mt-0.5">
             {total} uncategorized transaction{total !== 1 ? "s" : ""}
           </p>
+        </div>
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+          <input
+            type="search"
+            placeholder="Search transactions…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-300 bg-white text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+          />
         </div>
         <Button
           variant="secondary"
@@ -211,7 +231,9 @@ export default function InboxPage() {
         ) : transactions.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 gap-2 text-slate-400">
             <CheckSquare className="w-10 h-10 opacity-40" />
-            <p className="text-sm font-medium">Inbox is empty</p>
+            <p className="text-sm font-medium">
+              {debouncedSearch ? `No results for "${debouncedSearch}"` : "Inbox is empty"}
+            </p>
           </div>
         ) : (
           <table className="w-full text-sm">

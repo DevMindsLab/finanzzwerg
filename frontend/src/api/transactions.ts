@@ -15,9 +15,9 @@ export const transactionsApi = {
     return data;
   },
 
-  inbox: async (page = 1, pageSize = 50): Promise<TransactionListResponse> => {
+  inbox: async (page = 1, pageSize = 50, search?: string): Promise<TransactionListResponse> => {
     const { data } = await client.get<TransactionListResponse>("/transactions/inbox", {
-      params: { page, page_size: pageSize },
+      params: { page, page_size: pageSize, ...(search ? { search } : {}) },
     });
     return data;
   },

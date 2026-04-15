@@ -46,6 +46,7 @@ def list_transactions(
 def get_inbox(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=50, ge=1, le=200),
+    search: str | None = Query(default=None, max_length=200),
     db: Session = DB,
 ):
     """Return only uncategorized transactions — the Inbox view."""
@@ -54,6 +55,7 @@ def get_inbox(
         page=page,
         page_size=page_size,
         status=TransactionStatus.UNCATEGORIZED,
+        search=search,
     )
 
 
