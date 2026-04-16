@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     CORS_ORIGINS: List[str] = ["http://localhost:5173", "http://localhost:3000"]
     UPLOAD_DIR: str = "/app/uploads"
     MAX_UPLOAD_SIZE_MB: int = 25
+    ACCESS_TOKEN_EXPIRE_DAYS: int = 30
 
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod

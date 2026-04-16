@@ -13,13 +13,14 @@ from app.schemas.category import CategoryResponse
 
 
 class BudgetService:
-    def _spending(self, db: Session, category_id: int, year: int, month: int) -> Decimal:
+    def _spending(self, db: Session, category_id: int, year: int, month: int, user_id: int) -> Decimal:
         """Sum of expense amounts (absolute) for a category in the given month."""
         first = date(year, month, 1)
         last = date(year, month, monthrange(year, month)[1])
         result = (
             db.query(func.sum(Transaction.amount))
             .filter(
+                Transaction.user_id == user_id,
                 Transaction.category_id == category_id,
                 Transaction.amount < 0,
                 Transaction.date >= first,
@@ -29,9 +30,7 @@ class BudgetService:
         )
         return abs(result) if result is not None else Decimal("0")
 
-    def _to_response(
-        self, budget: Budget, spent: Decimal
-    ) -> BudgetResponse:
+    def _to_response(self, budget: Budget, spent: Decimal) -> BudgetResponse:
         cat = budget.category
         percentage = float(spent / budget.amount * 100) if budget.amount else 0.0
         return BudgetResponse(
@@ -46,26 +45,27 @@ class BudgetService:
             updated_at=budget.updated_at,
         )
 
-    def get_all(self, db: Session, year: int, month: int) -> list[BudgetResponse]:
+    def get_all(self, db: Session, year: int, month: int, user_id: int) -> list[BudgetResponse]:
         budgets = (
             db.query(Budget)
+            .filter(Budget.user_id == user_id)
             .join(Category)
             .order_by(Category.name)
             .all()
         )
         return [
-            self._to_response(b, self._spending(db, b.category_id, year, month))
+            self._to_response(b, self._spending(db, b.category_id, year, month, user_id))
             for b in budgets
         ]
 
-    def get_by_id(self, db: Session, budget_id: int) -> Budget | None:
-        return db.query(Budget).filter(Budget.id == budget_id).first()
+    def get_by_id(self, db: Session, budget_id: int, user_id: int) -> Budget | None:
+        return db.query(Budget).filter(Budget.id == budget_id, Budget.user_id == user_id).first()
 
-    def get_by_category(self, db: Session, category_id: int) -> Budget | None:
-        return db.query(Budget).filter(Budget.category_id == category_id).first()
+    def get_by_category(self, db: Session, category_id: int, user_id: int) -> Budget | None:
+        return db.query(Budget).filter(Budget.category_id == category_id, Budget.user_id == user_id).first()
 
-    def create(self, db: Session, data: BudgetCreate) -> Budget:
-        budget = Budget(category_id=data.category_id, amount=data.amount)
+    def create(self, db: Session, data: BudgetCreate, user_id: int) -> Budget:
+        budget = Budget(category_id=data.category_id, amount=data.amount, user_id=user_id)
         db.add(budget)
         db.commit()
         db.refresh(budget)

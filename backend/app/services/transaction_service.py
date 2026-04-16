@@ -23,6 +23,7 @@ class TransactionService:
     def get_list(
         self,
         db: Session,
+        user_id: int,
         *,
         page: int = 1,
         page_size: int = 50,
@@ -35,7 +36,11 @@ class TransactionService:
         amount_max: Decimal | None = None,
         transaction_type: str | None = None,
     ) -> TransactionListResponse:
-        q = db.query(Transaction).options(joinedload(Transaction.category))
+        q = (
+            db.query(Transaction)
+            .options(joinedload(Transaction.category))
+            .filter(Transaction.user_id == user_id)
+        )
 
         if status:
             q = q.filter(Transaction.status == status)
@@ -72,11 +77,11 @@ class TransactionService:
             pages=math.ceil(total / page_size) if total else 1,
         )
 
-    def get_by_id(self, db: Session, txn_id: int) -> Transaction | None:
+    def get_by_id(self, db: Session, txn_id: int, user_id: int) -> Transaction | None:
         return (
             db.query(Transaction)
             .options(joinedload(Transaction.category))
-            .filter(Transaction.id == txn_id)
+            .filter(Transaction.id == txn_id, Transaction.user_id == user_id)
             .first()
         )
 
@@ -93,8 +98,8 @@ class TransactionService:
         db.commit()
         return txns
 
-    def update(self, db: Session, txn_id: int, data: TransactionUpdate) -> Transaction | None:
-        txn = self.get_by_id(db, txn_id)
+    def update(self, db: Session, txn_id: int, data: TransactionUpdate, user_id: int) -> Transaction | None:
+        txn = self.get_by_id(db, txn_id, user_id)
         if not txn:
             return None
         for field, value in data.model_dump(exclude_unset=True).items():
@@ -103,8 +108,8 @@ class TransactionService:
         db.refresh(txn)
         return txn
 
-    def delete(self, db: Session, txn_id: int) -> bool:
-        txn = db.query(Transaction).filter(Transaction.id == txn_id).first()
+    def delete(self, db: Session, txn_id: int, user_id: int) -> bool:
+        txn = db.query(Transaction).filter(Transaction.id == txn_id, Transaction.user_id == user_id).first()
         if not txn:
             return False
         db.delete(txn)
@@ -116,8 +121,9 @@ class TransactionService:
         db: Session,
         txn_id: int,
         data: TransactionCategorize,
+        user_id: int,
     ) -> Transaction | None:
-        txn = self.get_by_id(db, txn_id)
+        txn = self.get_by_id(db, txn_id, user_id)
         if not txn:
             return None
         txn.category_id = data.category_id
@@ -126,10 +132,10 @@ class TransactionService:
         db.refresh(txn)
         return txn
 
-    def bulk_categorize(self, db: Session, data: BulkCategorize) -> int:
+    def bulk_categorize(self, db: Session, data: BulkCategorize, user_id: int) -> int:
         updated = (
             db.query(Transaction)
-            .filter(Transaction.id.in_(data.transaction_ids))
+            .filter(Transaction.id.in_(data.transaction_ids), Transaction.user_id == user_id)
             .update(
                 {
                     "category_id": data.category_id,
@@ -141,25 +147,28 @@ class TransactionService:
         db.commit()
         return updated
 
-    def exists_by_hash(self, db: Session, txn_hash: str) -> bool:
+    def exists_by_hash(self, db: Session, txn_hash: str, user_id: int) -> bool:
         return (
-            db.query(Transaction.id).filter(Transaction.hash == txn_hash).first() is not None
+            db.query(Transaction.id)
+            .filter(Transaction.hash == txn_hash, Transaction.user_id == user_id)
+            .first() is not None
         )
 
-    def get_inbox_count(self, db: Session) -> int:
+    def get_inbox_count(self, db: Session, user_id: int) -> int:
         result = (
             db.query(func.count(Transaction.id))
-            .filter(Transaction.status == TransactionStatus.UNCATEGORIZED)
+            .filter(Transaction.status == TransactionStatus.UNCATEGORIZED, Transaction.user_id == user_id)
             .scalar()
         )
         return result or 0
 
     # ── Dashboard ─────────────────────────────────────────────────────────────
 
-    def get_monthly_stats(self, db: Session, year: int, month: int) -> MonthlyStats:
+    def get_monthly_stats(self, db: Session, year: int, month: int, user_id: int) -> MonthlyStats:
         rows = (
             db.query(Transaction.amount)
             .filter(
+                Transaction.user_id == user_id,
                 extract("year", Transaction.date) == year,
                 extract("month", Transaction.date) == month,
                 Transaction.status != TransactionStatus.IGNORED,
@@ -179,7 +188,7 @@ class TransactionService:
             transaction_count=len(rows),
         )
 
-    def get_monthly_history(self, db: Session, months: int = 12) -> list[MonthlyStats]:
+    def get_monthly_history(self, db: Session, user_id: int, months: int = 12) -> list[MonthlyStats]:
         """Return stats for the last N calendar months."""
         rows = (
             db.query(
@@ -193,7 +202,7 @@ class TransactionService:
                 ).label("expenses"),
                 func.count(Transaction.id).label("cnt"),
             )
-            .filter(Transaction.status != TransactionStatus.IGNORED)
+            .filter(Transaction.user_id == user_id, Transaction.status != TransactionStatus.IGNORED)
             .group_by("year", "month")
             .order_by("year", "month")
             .limit(months)
@@ -217,6 +226,7 @@ class TransactionService:
         db: Session,
         year: int,
         month: int,
+        user_id: int,
         income: bool = False,
     ) -> list[CategoryBreakdown]:
         rows = (
@@ -229,6 +239,7 @@ class TransactionService:
             )
             .outerjoin(Category, Transaction.category_id == Category.id)
             .filter(
+                Transaction.user_id == user_id,
                 extract("year", Transaction.date) == year,
                 extract("month", Transaction.date) == month,
                 Transaction.status != TransactionStatus.IGNORED,

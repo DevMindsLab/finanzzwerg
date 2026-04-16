@@ -4,8 +4,9 @@ from decimal import Decimal
 from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import DB
+from app.api.deps import DB, CurrentUser
 from app.models.transaction import TransactionStatus
+from app.models.user import User
 from app.schemas.rule import RuleCreate
 from app.schemas.transaction import (
     BulkCategorize,
@@ -33,9 +34,11 @@ def list_transactions(
     amount_max: Decimal | None = None,
     transaction_type: str | None = Query(default=None, pattern="^(income|expense)$"),
     db: Session = DB,
+    current_user: User = CurrentUser,
 ):
     return transaction_service.get_list(
         db,
+        current_user.id,
         page=page,
         page_size=page_size,
         status=status,
@@ -60,10 +63,11 @@ def get_inbox(
     amount_max: Decimal | None = None,
     transaction_type: str | None = Query(default=None, pattern="^(income|expense)$"),
     db: Session = DB,
+    current_user: User = CurrentUser,
 ):
-    """Return only uncategorized transactions — the Inbox view."""
     return transaction_service.get_list(
         db,
+        current_user.id,
         page=page,
         page_size=page_size,
         status=TransactionStatus.UNCATEGORIZED,
@@ -77,35 +81,29 @@ def get_inbox(
 
 
 @router.get("/inbox/count", response_model=dict)
-def get_inbox_count(db: Session = DB):
-    return {"count": transaction_service.get_inbox_count(db)}
+def get_inbox_count(db: Session = DB, current_user: User = CurrentUser):
+    return {"count": transaction_service.get_inbox_count(db, current_user.id)}
 
 
 @router.get("/{txn_id}", response_model=TransactionResponse)
-def get_transaction(txn_id: int, db: Session = DB):
-    txn = transaction_service.get_by_id(db, txn_id)
+def get_transaction(txn_id: int, db: Session = DB, current_user: User = CurrentUser):
+    txn = transaction_service.get_by_id(db, txn_id, current_user.id)
     if not txn:
         raise HTTPException(status_code=404, detail="Transaction not found.")
     return txn
 
 
 @router.patch("/{txn_id}", response_model=TransactionResponse)
-def update_transaction(txn_id: int, data: TransactionUpdate, db: Session = DB):
-    txn = transaction_service.update(db, txn_id, data)
+def update_transaction(txn_id: int, data: TransactionUpdate, db: Session = DB, current_user: User = CurrentUser):
+    txn = transaction_service.update(db, txn_id, data, current_user.id)
     if not txn:
         raise HTTPException(status_code=404, detail="Transaction not found.")
     return txn
 
 
 @router.post("/{txn_id}/categorize", response_model=TransactionResponse)
-def categorize_transaction(txn_id: int, data: TransactionCategorize, db: Session = DB):
-    """
-    Categorize a transaction.
-
-    Optionally create a rule for future auto-categorization:
-    set create_rule=true and provide a rule_pattern.
-    """
-    txn = transaction_service.categorize(db, txn_id, data)
+def categorize_transaction(txn_id: int, data: TransactionCategorize, db: Session = DB, current_user: User = CurrentUser):
+    txn = transaction_service.categorize(db, txn_id, data, current_user.id)
     if not txn:
         raise HTTPException(status_code=404, detail="Transaction not found.")
 
@@ -115,18 +113,18 @@ def categorize_transaction(txn_id: int, data: TransactionCategorize, db: Session
             pattern=data.rule_pattern,
             category_id=data.category_id,
         )
-        rule_service.create(db, rule_create)
+        rule_service.create(db, rule_create, current_user.id)
 
     return txn
 
 
 @router.post("/bulk-categorize", response_model=dict)
-def bulk_categorize(data: BulkCategorize, db: Session = DB):
-    updated = transaction_service.bulk_categorize(db, data)
+def bulk_categorize(data: BulkCategorize, db: Session = DB, current_user: User = CurrentUser):
+    updated = transaction_service.bulk_categorize(db, data, current_user.id)
     return {"updated": updated}
 
 
 @router.delete("/{txn_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_transaction(txn_id: int, db: Session = DB):
-    if not transaction_service.delete(db, txn_id):
+def delete_transaction(txn_id: int, db: Session = DB, current_user: User = CurrentUser):
+    if not transaction_service.delete(db, txn_id, current_user.id):
         raise HTTPException(status_code=404, detail="Transaction not found.")

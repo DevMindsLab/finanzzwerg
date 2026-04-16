@@ -1,8 +1,9 @@
 from fastapi import APIRouter, BackgroundTasks, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import DB
+from app.api.deps import DB, CurrentUser
 from app.config import settings
+from app.models.user import User
 from app.schemas.import_job import CSVProfile, ImportJobResponse
 from app.services.import_service import import_service
 
@@ -10,19 +11,18 @@ router = APIRouter()
 
 
 @router.get("/", response_model=list[ImportJobResponse])
-def list_import_jobs(db: Session = DB):
-    return import_service.get_all(db)
+def list_import_jobs(db: Session = DB, current_user: User = CurrentUser):
+    return import_service.get_all(db, current_user.id)
 
 
 @router.delete("/", status_code=status.HTTP_204_NO_CONTENT)
-def clear_import_history(db: Session = DB):
-    """Delete all import jobs."""
-    import_service.delete_all(db)
+def clear_import_history(db: Session = DB, current_user: User = CurrentUser):
+    import_service.delete_all(db, current_user.id)
 
 
 @router.get("/{job_id}", response_model=ImportJobResponse)
-def get_import_job(job_id: int, db: Session = DB):
-    job = import_service.get_by_id(db, job_id)
+def get_import_job(job_id: int, db: Session = DB, current_user: User = CurrentUser):
+    job = import_service.get_by_id(db, job_id, current_user.id)
     if not job:
         raise HTTPException(status_code=404, detail="Import job not found.")
     return job
@@ -32,7 +32,6 @@ def get_import_job(job_id: int, db: Session = DB):
 async def upload_csv(
     file: UploadFile,
     background_tasks: BackgroundTasks,
-    # CSV profile fields passed as query params / form fields
     delimiter: str = ",",
     encoding: str = "utf-8",
     skip_rows: int = 0,
@@ -43,17 +42,12 @@ async def upload_csv(
     credit_column: str | None = None,
     decimal_separator: str = ".",
     thousands_separator: str = "",
-    description_columns: str = "description",  # comma-separated column names
+    description_columns: str = "description",
     description_join: str = " | ",
     negate_amount: bool = False,
     db: Session = DB,
+    current_user: User = CurrentUser,
 ):
-    """
-    Upload a CSV file for import.
-
-    Returns an ImportJob immediately (HTTP 202). Processing happens in the
-    background. Poll GET /imports/{id} to track progress.
-    """
     if not file.filename or not file.filename.lower().endswith(".csv"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -85,18 +79,13 @@ async def upload_csv(
         negate_amount=negate_amount,
     )
 
-    job = import_service.create_job(db, file.filename, profile)
-
-    # Kick off background processing — DB session is re-created inside
+    job = import_service.create_job(db, file.filename, profile, current_user.id)
     background_tasks.add_task(_run_import, job.id, content)
-
     return job
 
 
 def _run_import(job_id: int, content: bytes) -> None:
-    """Background task wrapper that manages its own DB session."""
     from app.database import SessionLocal
-
     db = SessionLocal()
     try:
         import_service.process_job(db, job_id, content)

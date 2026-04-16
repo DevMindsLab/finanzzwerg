@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   BarChart3,
   Inbox,
@@ -7,10 +7,12 @@ import {
   Zap,
   Tag,
   Upload,
+  LogOut,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { transactionsApi } from "@/api/transactions";
+import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 
 interface NavItem {
@@ -46,6 +48,13 @@ function SidebarLink({ item }: { item: NavItem }) {
 
 export default function Sidebar() {
   const { t, i18n } = useTranslation();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login", { replace: true });
+  };
 
   const { data: inboxCount = 0 } = useQuery({
     queryKey: ["inbox-count"],
@@ -91,17 +100,31 @@ export default function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-slate-800 flex items-center justify-between">
-        <p className="text-slate-600 text-xs">Financeless v0.1.0</p>
-        <button
-          onClick={toggleLanguage}
-          className="flex items-center gap-1 rounded-md border border-slate-700 px-2 py-1 text-xs font-medium text-slate-400 hover:border-slate-500 hover:text-white transition-colors"
-          title={currentLang.startsWith("de") ? "Switch to English" : "Zu Deutsch wechseln"}
-        >
-          <span className={currentLang.startsWith("de") ? "text-white" : "text-slate-500"}>DE</span>
-          <span className="text-slate-600">/</span>
-          <span className={!currentLang.startsWith("de") ? "text-white" : "text-slate-500"}>EN</span>
-        </button>
+      <div className="p-4 border-t border-slate-800 space-y-3">
+        {/* User row */}
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-slate-400 text-xs truncate min-w-0">{user?.email}</span>
+          <button
+            onClick={handleLogout}
+            title={t("auth.logout")}
+            className="shrink-0 flex items-center gap-1 rounded-md border border-slate-700 px-2 py-1 text-xs font-medium text-slate-400 hover:border-rose-600 hover:text-rose-400 transition-colors"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+          </button>
+        </div>
+        {/* Version + language */}
+        <div className="flex items-center justify-between">
+          <p className="text-slate-600 text-xs">Financeless v0.2.0</p>
+          <button
+            onClick={toggleLanguage}
+            className="flex items-center gap-1 rounded-md border border-slate-700 px-2 py-1 text-xs font-medium text-slate-400 hover:border-slate-500 hover:text-white transition-colors"
+            title={currentLang.startsWith("de") ? "Switch to English" : "Zu Deutsch wechseln"}
+          >
+            <span className={currentLang.startsWith("de") ? "text-white" : "text-slate-500"}>DE</span>
+            <span className="text-slate-600">/</span>
+            <span className={!currentLang.startsWith("de") ? "text-white" : "text-slate-500"}>EN</span>
+          </button>
+        </div>
       </div>
     </aside>
   );

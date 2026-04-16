@@ -1,12 +1,11 @@
 """
-Seeds default categories on first startup if the table is empty.
+Seeds default categories for a newly registered user.
 """
 
 import logging
 
 from sqlalchemy.orm import Session
 
-from app.database import SessionLocal
 from app.models.category import Category
 
 logger = logging.getLogger(__name__)
@@ -24,19 +23,16 @@ DEFAULT_CATEGORIES: list[dict] = [
 ]
 
 
-def seed_default_categories() -> None:
-    db: Session = SessionLocal()
+def seed_default_categories(db: Session, user_id: int) -> None:
+    """Create default categories for a new user if they don't already have any."""
     try:
-        if db.query(Category).count() == 0:
-            logger.info("Seeding default categories...")
+        existing = db.query(Category).filter(Category.user_id == user_id).count()
+        if existing == 0:
+            logger.info("Seeding default categories for user %d...", user_id)
             for cat_data in DEFAULT_CATEGORIES:
-                db.add(Category(**cat_data, is_default=True))
+                db.add(Category(**cat_data, user_id=user_id, is_default=True))
             db.commit()
-            logger.info("Default categories created.")
-        else:
-            logger.debug("Categories already exist, skipping seed.")
+            logger.info("Default categories created for user %d.", user_id)
     except Exception:
         db.rollback()
-        logger.exception("Failed to seed default categories")
-    finally:
-        db.close()
+        logger.exception("Failed to seed default categories for user %d", user_id)

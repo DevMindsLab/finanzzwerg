@@ -14,6 +14,7 @@ class TransactionBase(BaseModel):
 
 
 class TransactionCreate(TransactionBase):
+    user_id: int
     category_id: int | None = None
     import_job_id: int | None = None
     raw_data: dict | None = None

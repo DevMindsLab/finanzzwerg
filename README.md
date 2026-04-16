@@ -20,9 +20,9 @@
 | Bulk categorization | ✅ MVP |
 | Filter by income / expenses | ✅ MVP |
 | EN / DE language support (auto-detect) | ✅ MVP |
-| Multi-user auth | 🔲 Planned |
+| Budgeting (monthly limits per category) | ✅ MVP |
+| Multi-user auth (each user owns their data) | ✅ MVP |
 | ML-based categorization | 🔲 Planned |
-| Budgeting | 🔲 Planned |
 | Bank API integration | 🔲 Planned |
 
 ---
@@ -217,6 +217,7 @@ The `.env` file is generated automatically by `financeless.sh install` with secu
 | `CORS_ORIGINS` | Allowed frontend origins (JSON array) |
 | `VITE_API_URL` | Backend URL seen by the browser |
 | `GIT_REPO_URL` | Used by `financeless.sh update` for git pull |
+| `ACCESS_TOKEN_EXPIRE_DAYS` | JWT lifetime in days (default: 30) |
 
 ---
 

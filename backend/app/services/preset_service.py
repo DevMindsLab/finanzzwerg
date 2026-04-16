@@ -5,19 +5,20 @@ from app.schemas.import_job import CSVPresetCreate, CSVPresetUpdate
 
 
 class PresetService:
-    def get_all(self, db: Session) -> list[CSVPreset]:
-        return db.query(CSVPreset).order_by(CSVPreset.name).all()
+    def get_all(self, db: Session, user_id: int) -> list[CSVPreset]:
+        return db.query(CSVPreset).filter(CSVPreset.user_id == user_id).order_by(CSVPreset.name).all()
 
-    def get_by_id(self, db: Session, preset_id: int) -> CSVPreset | None:
-        return db.query(CSVPreset).filter(CSVPreset.id == preset_id).first()
+    def get_by_id(self, db: Session, preset_id: int, user_id: int) -> CSVPreset | None:
+        return db.query(CSVPreset).filter(CSVPreset.id == preset_id, CSVPreset.user_id == user_id).first()
 
-    def get_by_name(self, db: Session, name: str) -> CSVPreset | None:
-        return db.query(CSVPreset).filter(CSVPreset.name == name).first()
+    def get_by_name(self, db: Session, name: str, user_id: int) -> CSVPreset | None:
+        return db.query(CSVPreset).filter(CSVPreset.name == name, CSVPreset.user_id == user_id).first()
 
-    def create(self, db: Session, data: CSVPresetCreate) -> CSVPreset:
+    def create(self, db: Session, data: CSVPresetCreate, user_id: int) -> CSVPreset:
         preset = CSVPreset(
             name=data.name,
             profile=data.profile.model_dump(),
+            user_id=user_id,
         )
         db.add(preset)
         db.commit()
@@ -33,9 +34,9 @@ class PresetService:
         db.refresh(preset)
         return preset
 
-    def set_default(self, db: Session, preset: CSVPreset) -> CSVPreset:
-        """Mark preset as default, clearing any existing default first."""
-        db.query(CSVPreset).filter(CSVPreset.is_default == True).update(  # noqa: E712
+    def set_default(self, db: Session, preset: CSVPreset, user_id: int) -> CSVPreset:
+        """Mark preset as default for this user, clearing any existing default first."""
+        db.query(CSVPreset).filter(CSVPreset.user_id == user_id, CSVPreset.is_default == True).update(  # noqa: E712
             {"is_default": False}
         )
         preset.is_default = True
@@ -43,9 +44,8 @@ class PresetService:
         db.refresh(preset)
         return preset
 
-    def clear_default(self, db: Session) -> None:
-        """Remove the default flag from all presets."""
-        db.query(CSVPreset).filter(CSVPreset.is_default == True).update(  # noqa: E712
+    def clear_default(self, db: Session, user_id: int) -> None:
+        db.query(CSVPreset).filter(CSVPreset.user_id == user_id, CSVPreset.is_default == True).update(  # noqa: E712
             {"is_default": False}
         )
         db.commit()

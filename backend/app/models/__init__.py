@@ -5,6 +5,7 @@ from app.models.csv_preset import CSVPreset
 from app.models.import_job import ImportJob, ImportJobStatus
 from app.models.rule import MatchType, Rule
 from app.models.transaction import Transaction, TransactionStatus
+from app.models.user import User
 
 __all__ = [
     "Budget",
@@ -16,4 +17,5 @@ __all__ = [
     "Rule",
     "Transaction",
     "TransactionStatus",
+    "User",
 ]
