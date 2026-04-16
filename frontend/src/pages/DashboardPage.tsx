@@ -50,17 +50,23 @@ export default function DashboardPage() {
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth() + 1);
 
-  const handleCategoryClick = (categoryId: number | null) => {
+  const buildMonthParams = (type: "income" | "expense", categoryId: number | null) => {
     const mm = String(month).padStart(2, "0");
     const lastDay = new Date(year, month, 0).getDate();
     const params = new URLSearchParams({
       date_from: `${year}-${mm}-01`,
       date_to: `${year}-${mm}-${String(lastDay).padStart(2, "0")}`,
-      transaction_type: "expense",
+      transaction_type: type,
     });
     if (categoryId !== null) params.set("category_id", String(categoryId));
-    navigate(`/transactions?${params.toString()}`);
+    return params.toString();
   };
+
+  const handleCategoryClick = (categoryId: number | null) =>
+    navigate(`/transactions?${buildMonthParams("expense", categoryId)}`);
+
+  const handleIncomeClick = (categoryId: number | null) =>
+    navigate(`/transactions?${buildMonthParams("income", categoryId)}`);
 
   const months: string[] = t("dashboard.months", { returnObjects: true }) as string[];
 
@@ -86,7 +92,7 @@ export default function DashboardPage() {
     );
   }
 
-  const { current_month: cm, monthly_history, expense_breakdown, uncategorized_count } = data;
+  const { current_month: cm, monthly_history, expense_breakdown, income_breakdown, uncategorized_count } = data;
 
   const barData = monthly_history.map((m) => ({
     name: months[m.month - 1],
@@ -227,6 +233,61 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      {/* Income breakdown table */}
+      {income_breakdown.length > 0 && (
+        <div className="card overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100">
+            <h2 className="text-sm font-semibold text-slate-700">{t("dashboard.income_breakdown")}</h2>
+          </div>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-slate-100">
+                <th className="text-left px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">{t("dashboard.col_category")}</th>
+                <th className="text-right px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">{t("dashboard.col_transactions")}</th>
+                <th className="text-right px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">{t("dashboard.col_total")}</th>
+                <th className="px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">{t("dashboard.col_share")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {income_breakdown.map((row) => (
+                <tr
+                  key={row.category_id ?? "uncategorized"}
+                  onClick={() => handleIncomeClick(row.category_id)}
+                  title={t("dashboard.click_for_details")}
+                  className="border-b border-slate-50 last:border-0 hover:bg-slate-50 cursor-pointer group"
+                >
+                  <td className="px-6 py-3">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: row.category_color }} />
+                      <span className="font-medium text-slate-800 group-hover:text-brand-600">{row.category_name}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-3 text-right text-slate-600">{row.transaction_count}</td>
+                  <td className="px-6 py-3 text-right font-medium text-emerald-600">
+                    {formatCurrency(row.total)}
+                  </td>
+                  <td className="px-6 py-3">
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 bg-slate-100 rounded-full h-1.5 max-w-[80px]">
+                        <div
+                          className="h-1.5 rounded-full"
+                          style={{ width: `${Math.min(row.percentage, 100)}%`, backgroundColor: row.category_color }}
+                        />
+                      </div>
+                      <span className="text-slate-500 text-xs w-10 text-right">{row.percentage.toFixed(1)}%</span>
+                      <span className="flex items-center gap-1 text-xs text-brand-600 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                        {t("dashboard.click_for_details")}
+                        <ArrowRight className="w-3 h-3" />
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* Expense breakdown table */}
       {expense_breakdown.length > 0 && (
