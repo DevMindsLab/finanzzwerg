@@ -18,6 +18,8 @@
 | Category management | ✅ MVP |
 | Import deduplication (SHA-256 hash) | ✅ MVP |
 | Bulk categorization | ✅ MVP |
+| Filter by income / expenses | ✅ MVP |
+| EN / DE language support (auto-detect) | ✅ MVP |
 | Multi-user auth | 🔲 Planned |
 | ML-based categorization | 🔲 Planned |
 | Budgeting | 🔲 Planned |
@@ -25,24 +27,48 @@
 
 ---
 
-## Quick Start (Docker — recommended)
+## Installation
+
+### Requirements
+
+- A Linux server (Ubuntu, Debian, Fedora, RHEL, Arch, openSUSE — all supported)
+- Internet access (Docker is installed automatically if missing)
+
+### One-command setup
 
 ```bash
-# 1. Clone
-git clone https://github.com/your-org/financeless.git
+git clone <your-repo-url> financeless
 cd financeless
-
-# 2. Configure
-cp .env.example .env
-# Edit .env — at minimum change POSTGRES_PASSWORD and SECRET_KEY
-
-# 3. Run
-docker-compose up -d
-
-# Open http://localhost
+bash financeless.sh install
 ```
 
-The backend runs on port **8000**, the frontend on port **80**.
+The script handles everything:
+
+- installs Docker if not present
+- generates a `.env` with secure random secrets
+- builds and starts all containers
+- waits for the app to become healthy
+
+Open **http://your-server-ip** when done.
+
+### Management commands
+
+```bash
+bash financeless.sh start      # start stopped containers
+bash financeless.sh stop       # stop running containers
+bash financeless.sh update     # git pull + rebuild
+bash financeless.sh uninstall  # remove containers, volumes, images
+```
+
+### Ports
+
+| Service | Port |
+|---|---|
+| Frontend | 80 |
+| Backend API | 8000 |
+| PostgreSQL | 5432 |
+
+API docs: **http://your-server-ip:8000/api/docs**
 
 ---
 
@@ -59,16 +85,12 @@ The backend runs on port **8000**, the frontend on port **80**.
 ```bash
 cd backend
 
-# Create virtualenv
 python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
-
-# Install dependencies
 pip install -r requirements.txt
 
-# Configure environment
+# Copy and edit .env (set DATABASE_URL to your local Postgres)
 cp ../.env.example .env
-# Edit DATABASE_URL to point to your local Postgres
 
 # Run migrations (also seeds default categories)
 alembic upgrade head
@@ -83,20 +105,11 @@ API docs: http://localhost:8000/api/docs
 
 ```bash
 cd frontend
-
 npm install
-
-# Start dev server (proxies /api → localhost:8000)
 npm run dev
 ```
 
 Frontend: http://localhost:5173
-
-### Full stack (Docker dev mode with hot-reload)
-
-```bash
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
-```
 
 ---
 
@@ -104,6 +117,9 @@ docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
 
 ```
 financeless/
+├── financeless.sh               # Install / start / stop / update / uninstall
+├── docker-compose.yml
+│
 ├── backend/
 │   ├── app/
 │   │   ├── main.py              # FastAPI app, CORS, lifespan
@@ -121,15 +137,15 @@ financeless/
 │   │       ├── csv_parser.py    # Configurable CSV → ParsedTransaction
 │   │       └── seeder.py        # Default categories on first boot
 │   └── alembic/                 # Database migrations
-│       └── versions/001_initial_schema.py
 │
 └── frontend/
     └── src/
         ├── api/                 # Axios API clients
         ├── components/
-        │   ├── layout/          # Layout, Sidebar
+        │   ├── layout/          # Layout, Sidebar, language toggle
         │   └── ui/              # Button, Badge, Input, Select, Modal
-        ├── pages/               # DashboardPage, InboxPage, etc.
+        ├── pages/               # DashboardPage, InboxPage, TransactionsPage, …
+        ├── i18n.ts              # EN / DE translations (react-i18next)
         ├── types/index.ts       # All TypeScript types
         └── lib/utils.ts         # formatCurrency, formatDate, cn
 ```
@@ -145,7 +161,8 @@ financeless/
 | Styling | Tailwind CSS 3 |
 | Data fetching | TanStack Query v5 |
 | Charts | Recharts |
-| Containerization | Docker, docker-compose |
+| i18n | react-i18next (EN / DE, auto-detect) |
+| Containerization | Docker, Docker Compose v2 |
 
 ---
 
@@ -161,7 +178,7 @@ Financeless supports any bank CSV export via a configurable profile:
 | `decimal_separator` | `.` or `,` | `.` |
 | `description_columns` | Comma-separated list of columns to join | `description` |
 | `skip_rows` | Rows to skip before the header | `0` |
-| `debit_column` / `credit_column` | For split debit/credit | — |
+| `debit_column` / `credit_column` | For split debit/credit columns | — |
 
 Built-in presets: Deutsche Bank, ING, Generic CSV.
 
@@ -173,7 +190,7 @@ Each transaction is fingerprinted with a SHA-256 hash of `date + amount + descri
 
 ## Rule Engine
 
-Rules are applied automatically on every import, and can be re-applied manually via the UI.
+Rules are applied automatically on every import and can be re-applied manually via the UI.
 
 - **Substring** (default): case-insensitive `in` check
 - **Exact**: case-insensitive equality
@@ -189,21 +206,17 @@ When you manually categorize a transaction in the Inbox, Financeless suggests cr
 
 ## Environment Variables
 
-| Variable | Default | Description |
-|---|---|---|
-| `DATABASE_URL` | `postgresql://...` | Full PostgreSQL connection URL |
-| `SECRET_KEY` | *(required)* | App secret — change in production |
-| `CORS_ORIGINS` | `http://localhost:5173,...` | Allowed frontend origins |
-| `MAX_UPLOAD_SIZE_MB` | `25` | Maximum CSV upload size |
+The `.env` file is generated automatically by `financeless.sh install` with secure random values. You can edit it afterwards:
 
----
-
-## Contributing
-
-1. Fork the repo
-2. Create a feature branch
-3. Follow the existing code style (typing everywhere, service layer, no unnecessary abstraction)
-4. Open a PR
+| Variable | Description |
+|---|---|
+| `POSTGRES_USER` | Database user |
+| `POSTGRES_PASSWORD` | Database password |
+| `POSTGRES_DB` | Database name |
+| `SECRET_KEY` | App secret — keep this safe |
+| `CORS_ORIGINS` | Allowed frontend origins (JSON array) |
+| `VITE_API_URL` | Backend URL seen by the browser |
+| `GIT_REPO_URL` | Used by `financeless.sh update` for git pull |
 
 ---
 
