@@ -15,7 +15,7 @@ import {
   Pie,
   Legend,
 } from "recharts";
-import { TrendingUp, TrendingDown, Minus, AlertCircle } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, AlertCircle, ArrowRight } from "lucide-react";
 import { dashboardApi } from "@/api/dashboard";
 import { formatCurrency } from "@/lib/utils";
 
@@ -248,7 +248,8 @@ export default function DashboardPage() {
                 <tr
                   key={row.category_id ?? "uncategorized"}
                   onClick={() => handleCategoryClick(row.category_id)}
-                  className="border-b border-slate-50 last:border-0 hover:bg-slate-50 cursor-pointer"
+                  title={t("dashboard.click_for_details")}
+                  className="border-b border-slate-50 last:border-0 hover:bg-slate-50 cursor-pointer group"
                 >
                   <td className="px-6 py-3">
                     <div className="flex items-center gap-2">
@@ -276,6 +277,10 @@ export default function DashboardPage() {
                       </div>
                       <span className="text-slate-500 text-xs w-10 text-right">
                         {row.percentage.toFixed(1)}%
+                      </span>
+                      <span className="flex items-center gap-1 text-xs text-brand-600 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                        {t("dashboard.click_for_details")}
+                        <ArrowRight className="w-3 h-3" />
                       </span>
                     </div>
                   </td>
