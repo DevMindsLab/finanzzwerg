@@ -28,6 +28,10 @@ export const importsApi = {
     return data;
   },
 
+  clearHistory: async (): Promise<void> => {
+    await client.delete("/imports/");
+  },
+
   upload: async (file: File, options: UploadOptions = {}): Promise<ImportJob> => {
     const form = new FormData();
     form.append("file", file);

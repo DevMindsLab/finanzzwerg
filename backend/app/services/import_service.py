@@ -27,6 +27,12 @@ class ImportService:
     def get_all(self, db: Session) -> list[ImportJob]:
         return db.query(ImportJob).order_by(ImportJob.created_at.desc()).all()
 
+    def delete_all(self, db: Session) -> int:
+        count = db.query(ImportJob).count()
+        db.query(ImportJob).delete()
+        db.commit()
+        return count
+
     def get_by_id(self, db: Session, job_id: int) -> ImportJob | None:
         return db.query(ImportJob).filter(ImportJob.id == job_id).first()
 

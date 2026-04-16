@@ -14,6 +14,12 @@ def list_import_jobs(db: Session = DB):
     return import_service.get_all(db)
 
 
+@router.delete("/", status_code=status.HTTP_204_NO_CONTENT)
+def clear_import_history(db: Session = DB):
+    """Delete all import jobs."""
+    import_service.delete_all(db)
+
+
 @router.get("/{job_id}", response_model=ImportJobResponse)
 def get_import_job(job_id: int, db: Session = DB):
     job = import_service.get_by_id(db, job_id)

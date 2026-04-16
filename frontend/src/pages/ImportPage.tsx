@@ -10,6 +10,7 @@ import {
   Loader2,
   ChevronDown,
   ChevronRight,
+  Trash2,
 } from "lucide-react";
 import { importsApi, type UploadOptions } from "@/api/imports";
 import type { ImportJob } from "@/types";
@@ -115,6 +116,15 @@ export default function ImportPage() {
       }
     }
   }, [jobs, pendingJobId, qc, t]);
+
+  const clearHistoryMutation = useMutation({
+    mutationFn: importsApi.clearHistory,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["import-jobs"] });
+      toast.success(t("import.clear_history"));
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
 
   const uploadMutation = useMutation({
     mutationFn: (file: File) => importsApi.upload(file, opts),
@@ -271,8 +281,20 @@ export default function ImportPage() {
       {/* Import history */}
       {jobs.length > 0 && (
         <div className="card overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100">
+          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-slate-700">{t("import.import_history")}</h2>
+            <button
+              onClick={() => {
+                if (confirm(t("import.clear_history_confirm"))) {
+                  clearHistoryMutation.mutate();
+                }
+              }}
+              disabled={clearHistoryMutation.isPending}
+              className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-rose-600 transition-colors disabled:opacity-40"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              {t("import.clear_history")}
+            </button>
           </div>
           {jobs.map((job) => (
             <JobRow key={job.id} job={job} />
