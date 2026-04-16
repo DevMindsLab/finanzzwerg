@@ -39,7 +39,7 @@ export const importsApi = {
     // Build query params from options
     const params = new URLSearchParams();
     Object.entries(options).forEach(([k, v]) => {
-      if (v !== undefined && v !== "") {
+      if (v !== undefined && v !== null && v !== "") {
         params.set(k, String(v));
       }
     });
