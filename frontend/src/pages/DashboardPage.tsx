@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import {
   BarChart,
   Bar,
@@ -16,11 +17,6 @@ import {
 import { TrendingUp, TrendingDown, Minus, AlertCircle } from "lucide-react";
 import { dashboardApi } from "@/api/dashboard";
 import { formatCurrency } from "@/lib/utils";
-
-const MONTH_NAMES = [
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-];
 
 function StatCard({
   label,
@@ -47,9 +43,12 @@ function StatCard({
 }
 
 export default function DashboardPage() {
+  const { t } = useTranslation();
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth() + 1);
+
+  const months: string[] = t("dashboard.months", { returnObjects: true }) as string[];
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["dashboard", year, month],
@@ -68,7 +67,7 @@ export default function DashboardPage() {
     return (
       <div className="flex items-center gap-3 text-rose-600 p-6 card">
         <AlertCircle className="w-5 h-5 shrink-0" />
-        <p>Failed to load dashboard data.</p>
+        <p>{t("common.error")}</p>
       </div>
     );
   }
@@ -76,7 +75,7 @@ export default function DashboardPage() {
   const { current_month: cm, monthly_history, expense_breakdown, uncategorized_count } = data;
 
   const barData = monthly_history.map((m) => ({
-    name: MONTH_NAMES[m.month - 1],
+    name: months[m.month - 1],
     income: parseFloat(m.income),
     expenses: parseFloat(m.expenses),
   }));
@@ -92,8 +91,8 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Your financial overview</p>
+          <h1 className="text-2xl font-bold text-slate-900">{t("dashboard.title")}</h1>
+          <p className="text-sm text-slate-500 mt-0.5">{t("dashboard.subtitle")}</p>
         </div>
         <div className="flex items-center gap-2">
           <select
@@ -101,7 +100,7 @@ export default function DashboardPage() {
             onChange={(e) => setMonth(Number(e.target.value))}
             className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
           >
-            {MONTH_NAMES.map((name, i) => (
+            {months.map((name, i) => (
               <option key={i} value={i + 1}>{name}</option>
             ))}
           </select>
@@ -125,29 +124,28 @@ export default function DashboardPage() {
         >
           <AlertCircle className="w-5 h-5 shrink-0 text-amber-500" />
           <p className="text-sm font-medium">
-            {uncategorized_count} uncategorized transaction
-            {uncategorized_count !== 1 ? "s" : ""} waiting in your inbox
+            {t("dashboard.uncategorized_alert", { count: uncategorized_count })}
           </p>
-          <span className="ml-auto text-sm font-semibold underline">Review →</span>
+          <span className="ml-auto text-sm font-semibold underline">{t("dashboard.review")}</span>
         </a>
       )}
 
       {/* Stat cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         <StatCard
-          label="Income"
+          label={t("dashboard.income")}
           value={formatCurrency(cm.income)}
           icon={TrendingUp}
           colorClass="bg-emerald-100 text-emerald-600"
         />
         <StatCard
-          label="Expenses"
+          label={t("dashboard.expenses")}
           value={formatCurrency(cm.expenses)}
           icon={TrendingDown}
           colorClass="bg-rose-100 text-rose-600"
         />
         <StatCard
-          label="Balance"
+          label={t("dashboard.balance")}
           value={formatCurrency(cm.balance)}
           icon={Minus}
           colorClass={
@@ -162,7 +160,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Bar chart */}
         <div className="card p-6 lg:col-span-2">
-          <h2 className="text-sm font-semibold text-slate-700 mb-5">Monthly Overview (12 months)</h2>
+          <h2 className="text-sm font-semibold text-slate-700 mb-5">{t("dashboard.monthly_overview")}</h2>
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={barData} barCategoryGap="30%">
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -172,18 +170,18 @@ export default function DashboardPage() {
                 formatter={(v: number) => formatCurrency(v)}
                 contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13 }}
               />
-              <Bar dataKey="income" name="Income" fill="#10b981" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="expenses" name="Expenses" fill="#f43f5e" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="income" name={t("dashboard.income")} fill="#10b981" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="expenses" name={t("dashboard.expenses")} fill="#f43f5e" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
         {/* Pie chart */}
         <div className="card p-6">
-          <h2 className="text-sm font-semibold text-slate-700 mb-5">Expenses by Category</h2>
+          <h2 className="text-sm font-semibold text-slate-700 mb-5">{t("dashboard.expenses_by_category")}</h2>
           {pieData.length === 0 ? (
             <div className="flex items-center justify-center h-48 text-slate-400 text-sm">
-              No expense data
+              {t("dashboard.no_expense_data")}
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={240}>
@@ -220,15 +218,15 @@ export default function DashboardPage() {
       {expense_breakdown.length > 0 && (
         <div className="card overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-100">
-            <h2 className="text-sm font-semibold text-slate-700">Expense Breakdown</h2>
+            <h2 className="text-sm font-semibold text-slate-700">{t("dashboard.expense_breakdown")}</h2>
           </div>
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-100">
-                <th className="text-left px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Category</th>
-                <th className="text-right px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Transactions</th>
-                <th className="text-right px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Total</th>
-                <th className="px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Share</th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">{t("dashboard.col_category")}</th>
+                <th className="text-right px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">{t("dashboard.col_transactions")}</th>
+                <th className="text-right px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">{t("dashboard.col_total")}</th>
+                <th className="px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">{t("dashboard.col_share")}</th>
               </tr>
             </thead>
             <tbody>

@@ -1,15 +1,10 @@
 /**
  * Inbox — uncategorized transactions with fast keyboard-driven categorization.
- *
- * UX details:
- * - Each row has an inline category dropdown.
- * - Saving a category triggers the "Create rule?" suggestion banner.
- * - Bulk select + categorize via header checkbox.
- * - Keyboard: Tab to next row, Enter to confirm.
  */
 
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import { CheckSquare, Search, Zap } from "lucide-react";
 import { transactionsApi } from "@/api/transactions";
@@ -32,10 +27,12 @@ function CategoryDropdown({
   transaction,
   categories,
   onCategorize,
+  placeholder,
 }: {
   transaction: Transaction;
   categories: Category[];
   onCategorize: (txnId: number, categoryId: number) => void;
+  placeholder: string;
 }) {
   return (
     <select
@@ -46,7 +43,7 @@ function CategoryDropdown({
       className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
     >
       <option value="" disabled>
-        Select category…
+        {placeholder}
       </option>
       {categories.map((cat) => (
         <option key={cat.id} value={cat.id}>
@@ -58,6 +55,7 @@ function CategoryDropdown({
 }
 
 export default function InboxPage() {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -68,11 +66,11 @@ export default function InboxPage() {
   const [rulePattern, setRulePattern] = useState("");
 
   useEffect(() => {
-    const t = setTimeout(() => {
+    const timer = setTimeout(() => {
       setDebouncedSearch(search);
       setPage(1);
     }, 300);
-    return () => clearTimeout(t);
+    return () => clearTimeout(timer);
   }, [search]);
 
   const { data, isLoading } = useQuery({
@@ -93,8 +91,7 @@ export default function InboxPage() {
       qc.invalidateQueries({ queryKey: ["inbox"] });
       qc.invalidateQueries({ queryKey: ["inbox-count"] });
       qc.invalidateQueries({ queryKey: ["transactions"] });
-      toast.success("Transaction categorized");
-      // Suggest rule creation
+      toast.success(t("inbox.categorized"));
       setRulePattern(txn.description.split(" ").slice(0, 3).join(" "));
       setRuleSuggestion({ transactionId: id, description: txn.description, categoryId });
     },
@@ -111,7 +108,7 @@ export default function InboxPage() {
       qc.invalidateQueries({ queryKey: ["inbox-count"] });
       setSelected(new Set());
       setBulkCategory("");
-      toast.success(`${updated} transactions categorized`);
+      toast.success(t("inbox.bulk_categorized", { count: updated }));
     },
   });
 
@@ -126,7 +123,7 @@ export default function InboxPage() {
         priority: 0,
       }),
     onSuccess: () => {
-      toast.success("Rule created — future imports will auto-categorize matching transactions");
+      toast.success(t("inbox.rule_created"));
       setRuleSuggestion(null);
     },
   });
@@ -136,7 +133,7 @@ export default function InboxPage() {
     onSuccess: ({ categorized }) => {
       qc.invalidateQueries({ queryKey: ["inbox"] });
       qc.invalidateQueries({ queryKey: ["inbox-count"] });
-      toast.success(`Rules applied — ${categorized} transaction${categorized !== 1 ? "s" : ""} categorized`);
+      toast.success(t("inbox.rules_applied", { count: categorized }));
     },
   });
 
@@ -168,16 +165,16 @@ export default function InboxPage() {
       {/* Header */}
       <div className="flex items-center justify-between gap-4">
         <div className="shrink-0">
-          <h1 className="text-2xl font-bold text-slate-900">Inbox</h1>
+          <h1 className="text-2xl font-bold text-slate-900">{t("inbox.title")}</h1>
           <p className="text-sm text-slate-500 mt-0.5">
-            {total} uncategorized transaction{total !== 1 ? "s" : ""}
+            {t("inbox.subtitle", { count: total })}
           </p>
         </div>
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           <input
             type="search"
-            placeholder="Search transactions…"
+            placeholder={t("inbox.search_placeholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-300 bg-white text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
@@ -189,7 +186,7 @@ export default function InboxPage() {
           loading={applyRulesMutation.isPending}
           onClick={() => applyRulesMutation.mutate()}
         >
-          Apply Rules
+          {t("inbox.apply_rules")}
         </Button>
       </div>
 
@@ -198,12 +195,12 @@ export default function InboxPage() {
         <div className="flex items-center gap-3 p-4 bg-brand-50 border border-brand-200 rounded-xl">
           <CheckSquare className="w-5 h-5 text-brand-600 shrink-0" />
           <span className="text-sm font-medium text-brand-800">
-            {selected.size} selected
+            {t("inbox.selected", { count: selected.size })}
           </span>
           <div className="flex-1" />
           <Select
             options={categoryOptions}
-            placeholder="Choose category…"
+            placeholder={t("inbox.choose_category")}
             value={bulkCategory}
             onChange={(e) => setBulkCategory(e.target.value)}
             className="w-48"
@@ -214,10 +211,10 @@ export default function InboxPage() {
             loading={bulkMutation.isPending}
             onClick={() => bulkMutation.mutate(parseInt(bulkCategory))}
           >
-            Categorize
+            {t("inbox.categorize")}
           </Button>
           <Button variant="ghost" size="sm" onClick={() => setSelected(new Set())}>
-            Cancel
+            {t("inbox.cancel")}
           </Button>
         </div>
       )}
@@ -232,7 +229,9 @@ export default function InboxPage() {
           <div className="flex flex-col items-center justify-center h-48 gap-2 text-slate-400">
             <CheckSquare className="w-10 h-10 opacity-40" />
             <p className="text-sm font-medium">
-              {debouncedSearch ? `No results for "${debouncedSearch}"` : "Inbox is empty"}
+              {debouncedSearch
+                ? t("inbox.no_results", { search: debouncedSearch })
+                : t("inbox.empty")}
             </p>
           </div>
         ) : (
@@ -247,10 +246,10 @@ export default function InboxPage() {
                     className="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
                   />
                 </th>
-                <th className="text-left px-3 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Date</th>
-                <th className="text-left px-3 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Description</th>
-                <th className="text-right px-3 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Amount</th>
-                <th className="text-left px-3 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide w-56">Category</th>
+                <th className="text-left px-3 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">{t("inbox.col_date")}</th>
+                <th className="text-left px-3 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">{t("inbox.col_description")}</th>
+                <th className="text-right px-3 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">{t("inbox.col_amount")}</th>
+                <th className="text-left px-3 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide w-56">{t("inbox.col_category")}</th>
               </tr>
             </thead>
             <tbody>
@@ -282,6 +281,7 @@ export default function InboxPage() {
                     <CategoryDropdown
                       transaction={txn}
                       categories={categories}
+                      placeholder={t("inbox.select_category")}
                       onCategorize={(id, catId) => categorizeMutation.mutate({ id, categoryId: catId })}
                     />
                   </td>
@@ -301,10 +301,10 @@ export default function InboxPage() {
             disabled={page <= 1}
             onClick={() => setPage((p) => p - 1)}
           >
-            Previous
+            {t("inbox.previous")}
           </Button>
           <span className="text-sm text-slate-600">
-            Page {page} of {pages}
+            {t("inbox.page_of", { page, pages })}
           </span>
           <Button
             variant="secondary"
@@ -312,7 +312,7 @@ export default function InboxPage() {
             disabled={page >= pages}
             onClick={() => setPage((p) => p + 1)}
           >
-            Next
+            {t("inbox.next")}
           </Button>
         </div>
       )}
@@ -321,36 +321,31 @@ export default function InboxPage() {
       <Modal
         isOpen={!!ruleSuggestion}
         onClose={() => setRuleSuggestion(null)}
-        title="Create categorization rule?"
+        title={t("inbox.create_rule_title")}
         size="sm"
         footer={
           <>
             <Button variant="ghost" onClick={() => setRuleSuggestion(null)}>
-              Skip
+              {t("inbox.skip")}
             </Button>
             <Button
               loading={createRuleMutation.isPending}
               onClick={() => createRuleMutation.mutate(rulePattern)}
             >
-              Create Rule
+              {t("inbox.create_rule")}
             </Button>
           </>
         }
       >
         <div className="space-y-4">
-          <p className="text-sm text-slate-600">
-            Automatically categorize future transactions that match this pattern:
-          </p>
+          <p className="text-sm text-slate-600">{t("inbox.create_rule_desc")}</p>
           <Input
-            label="Pattern (substring match)"
+            label={t("inbox.rule_pattern_label")}
             value={rulePattern}
             onChange={(e) => setRulePattern(e.target.value)}
-            placeholder="e.g. REWE, Amazon, Spotify"
+            placeholder={t("inbox.rule_pattern_placeholder")}
           />
-          <p className="text-xs text-slate-400">
-            Case-insensitive. Any transaction description containing this text will be
-            categorized automatically on import.
-          </p>
+          <p className="text-xs text-slate-400">{t("inbox.rule_hint")}</p>
         </div>
       </Modal>
     </div>

@@ -1,12 +1,6 @@
-/**
- * Import page — CSV upload with configurable profile and live job status.
- *
- * The profile section exposes the most common settings up front and hides
- * advanced options behind a toggle so the default experience stays simple.
- */
-
 import { useRef, useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import {
   Upload,
@@ -45,6 +39,7 @@ const STATUS_BADGE: Record<string, "warning" | "info" | "success" | "danger"> = 
 };
 
 function JobRow({ job }: { job: ImportJob }) {
+  const { t } = useTranslation();
   const Icon = STATUS_ICON[job.status] ?? Clock;
   return (
     <div className="flex items-center gap-4 px-6 py-4 border-b border-slate-50 last:border-0">
@@ -54,7 +49,7 @@ function JobRow({ job }: { job: ImportJob }) {
         <p className="text-xs text-slate-500 mt-0.5">
           {formatDate(job.created_at)}
           {job.total_rows !== null &&
-            ` · ${job.processed_rows} imported, ${job.duplicate_rows} duplicates`}
+            ` · ${t("import.imported", { processed: job.processed_rows, duplicates: job.duplicate_rows })}`}
         </p>
         {job.error_message && (
           <p className="text-xs text-rose-600 mt-1 truncate" title={job.error_message}>
@@ -70,6 +65,7 @@ function JobRow({ job }: { job: ImportJob }) {
 }
 
 export default function ImportPage() {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -100,7 +96,6 @@ export default function ImportPage() {
     refetchInterval: pendingJobId ? 1500 : false,
   });
 
-  // Stop polling once the pending job completes
   useEffect(() => {
     if (!pendingJobId) return;
     const job = jobs.find((j) => j.id === pendingJobId);
@@ -110,20 +105,23 @@ export default function ImportPage() {
       qc.invalidateQueries({ queryKey: ["inbox-count"] });
       if (job.status === "completed") {
         toast.success(
-          `Import complete — ${job.processed_rows} new transactions, ${job.duplicate_rows} duplicates skipped`,
+          t("import.import_complete", {
+            processed: job.processed_rows,
+            duplicates: job.duplicate_rows,
+          }),
         );
       } else {
-        toast.error(`Import failed: ${job.error_message}`);
+        toast.error(t("import.import_failed", { error: job.error_message }));
       }
     }
-  }, [jobs, pendingJobId, qc]);
+  }, [jobs, pendingJobId, qc, t]);
 
   const uploadMutation = useMutation({
     mutationFn: (file: File) => importsApi.upload(file, opts),
     onSuccess: (job) => {
       qc.invalidateQueries({ queryKey: ["import-jobs"] });
       setPendingJobId(job.id);
-      toast("Processing CSV in the background…", { icon: "⏳" });
+      toast(t("import.processing"), { icon: "⏳" });
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -131,7 +129,7 @@ export default function ImportPage() {
   const handleFile = (file: File | null) => {
     if (!file) return;
     if (!file.name.toLowerCase().endsWith(".csv")) {
-      toast.error("Only .csv files are supported");
+      toast.error(t("import.only_csv"));
       return;
     }
     uploadMutation.mutate(file);
@@ -143,13 +141,30 @@ export default function ImportPage() {
     handleFile(e.dataTransfer.files[0] ?? null);
   };
 
+  const presets = [
+    {
+      label: "HASPA (DE)",
+      opts: { delimiter: ";", date_column: "Buchungstag", date_format: "%d.%m.%y", amount_column: "Betrag", decimal_separator: ",", thousands_separator: ".", description_columns: "Beguenstigter/Zahlungspflichtiger,Verwendungszweck", description_join: " | ", skip_rows: 0, encoding: "latin-1" },
+    },
+    {
+      label: "Deutsche Bank (DE)",
+      opts: { delimiter: ";", date_column: "Buchungstag", date_format: "%d.%m.%Y", amount_column: "Betrag (EUR)", decimal_separator: ",", thousands_separator: ".", description_columns: "Auftraggeber / Beguenstigter,Verwendungszweck", skip_rows: 4 },
+    },
+    {
+      label: "ING (DE)",
+      opts: { delimiter: ";", date_column: "Buchung", date_format: "%d.%m.%Y", amount_column: "Betrag", decimal_separator: ",", thousands_separator: ".", description_columns: "Auftraggeber/Empfänger,Verwendungszweck", skip_rows: 13 },
+    },
+    {
+      label: "Generic CSV",
+      opts: { delimiter: ",", date_column: "date", date_format: "%Y-%m-%d", amount_column: "amount", decimal_separator: ".", thousands_separator: "", description_columns: "description" },
+    },
+  ];
+
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Import</h1>
-        <p className="text-sm text-slate-500 mt-0.5">
-          Upload a CSV export from your bank
-        </p>
+        <h1 className="text-2xl font-bold text-slate-900">{t("import.title")}</h1>
+        <p className="text-sm text-slate-500 mt-0.5">{t("import.subtitle")}</p>
       </div>
 
       {/* Upload zone */}
@@ -181,11 +196,9 @@ export default function ImportPage() {
         )}
         <div className="text-center">
           <p className="font-semibold text-slate-700">
-            {uploadMutation.isPending ? "Uploading…" : "Drop your CSV here"}
+            {uploadMutation.isPending ? t("import.uploading") : t("import.drop_csv")}
           </p>
-          <p className="text-sm text-slate-400 mt-1">
-            or click to browse · Max 25 MB
-          </p>
+          <p className="text-sm text-slate-400 mt-1">{t("import.browse_hint")}</p>
         </div>
       </div>
 
@@ -196,10 +209,8 @@ export default function ImportPage() {
           onClick={() => setShowAdvanced((v) => !v)}
         >
           <div>
-            <p className="font-semibold text-slate-800">CSV Profile</p>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Configure column names and formats to match your bank's export
-            </p>
+            <p className="font-semibold text-slate-800">{t("import.csv_profile")}</p>
+            <p className="text-xs text-slate-500 mt-0.5">{t("import.csv_profile_hint")}</p>
           </div>
           {showAdvanced ? (
             <ChevronDown className="w-5 h-5 text-slate-400" />
@@ -210,17 +221,17 @@ export default function ImportPage() {
 
         {showAdvanced && (
           <div className="border-t border-slate-100 px-6 py-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Input label="Date column" value={opts.date_column} onChange={set("date_column")} />
-            <Input label="Date format" value={opts.date_format} onChange={set("date_format")} hint="e.g. %d.%m.%Y" />
-            <Input label="Amount column" value={opts.amount_column} onChange={set("amount_column")} />
-            <Input label="Description columns" value={opts.description_columns} onChange={set("description_columns")} hint="Comma-separated column names" />
-            <Input label="Decimal separator" value={opts.decimal_separator} onChange={set("decimal_separator")} hint=". or ," />
-            <Input label="Thousands separator" value={opts.thousands_separator} onChange={set("thousands_separator")} hint="Leave empty if unused" />
-            <Input label="CSV delimiter" value={opts.delimiter} onChange={set("delimiter")} />
-            <Input label="Encoding" value={opts.encoding} onChange={set("encoding")} hint="e.g. utf-8, latin-1, utf-8-sig" />
-            <Input label="Skip rows" type="number" value={opts.skip_rows} onChange={set("skip_rows")} hint="Metadata rows before the header" />
-            <Input label="Debit column (optional)" value={opts.debit_column ?? ""} onChange={set("debit_column")} hint="For split debit/credit columns" />
-            <Input label="Credit column (optional)" value={opts.credit_column ?? ""} onChange={set("credit_column")} />
+            <Input label={t("import.label_date_column")} value={opts.date_column} onChange={set("date_column")} />
+            <Input label={t("import.label_date_format")} value={opts.date_format} onChange={set("date_format")} hint={t("import.date_format_hint")} />
+            <Input label={t("import.label_amount_column")} value={opts.amount_column} onChange={set("amount_column")} />
+            <Input label={t("import.label_description_columns")} value={opts.description_columns} onChange={set("description_columns")} hint={t("import.description_columns_hint")} />
+            <Input label={t("import.label_decimal_separator")} value={opts.decimal_separator} onChange={set("decimal_separator")} hint={t("import.decimal_separator_hint")} />
+            <Input label={t("import.label_thousands_separator")} value={opts.thousands_separator} onChange={set("thousands_separator")} hint={t("import.thousands_separator_hint")} />
+            <Input label={t("import.label_csv_delimiter")} value={opts.delimiter} onChange={set("delimiter")} />
+            <Input label={t("import.label_encoding")} value={opts.encoding} onChange={set("encoding")} hint={t("import.encoding_hint")} />
+            <Input label={t("import.label_skip_rows")} type="number" value={opts.skip_rows} onChange={set("skip_rows")} hint={t("import.skip_rows_hint")} />
+            <Input label={t("import.label_debit_column")} value={opts.debit_column ?? ""} onChange={set("debit_column")} hint={t("import.debit_column_hint")} />
+            <Input label={t("import.label_credit_column")} value={opts.credit_column ?? ""} onChange={set("credit_column")} />
             <div className="flex items-center gap-2 pt-5">
               <input
                 id="negate"
@@ -230,38 +241,25 @@ export default function ImportPage() {
                 className="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
               />
               <label htmlFor="negate" className="text-sm text-slate-700">
-                Negate amounts (bank shows expenses as positive)
+                {t("import.negate_amounts")}
               </label>
             </div>
           </div>
         )}
       </div>
 
-      {/* Common bank presets */}
+      {/* Quick presets */}
       <div className="card p-5">
-        <p className="text-sm font-semibold text-slate-700 mb-3">Quick presets</p>
+        <p className="text-sm font-semibold text-slate-700 mb-3">{t("import.quick_presets")}</p>
         <div className="flex flex-wrap gap-2">
-          {[
-            {
-              label: "HASPA (DE)",
-              opts: { delimiter: ";", date_column: "Buchungstag", date_format: "%d.%m.%y", amount_column: "Betrag", decimal_separator: ",", thousands_separator: ".", description_columns: "Beguenstigter/Zahlungspflichtiger,Verwendungszweck", description_join: " | ", skip_rows: 0, encoding: "latin-1" },
-            },
-            {
-              label: "Deutsche Bank (DE)",
-              opts: { delimiter: ";", date_column: "Buchungstag", date_format: "%d.%m.%Y", amount_column: "Betrag (EUR)", decimal_separator: ",", thousands_separator: ".", description_columns: "Auftraggeber / Beguenstigter,Verwendungszweck", skip_rows: 4 },
-            },
-            {
-              label: "ING (DE)",
-              opts: { delimiter: ";", date_column: "Buchung", date_format: "%d.%m.%Y", amount_column: "Betrag", decimal_separator: ",", thousands_separator: ".", description_columns: "Auftraggeber/Empfänger,Verwendungszweck", skip_rows: 13 },
-            },
-            {
-              label: "Generic CSV",
-              opts: { delimiter: ",", date_column: "date", date_format: "%Y-%m-%d", amount_column: "amount", decimal_separator: ".", thousands_separator: "", description_columns: "description" },
-            },
-          ].map((preset) => (
+          {presets.map((preset) => (
             <button
               key={preset.label}
-              onClick={() => { setOpts((o) => ({ ...o, ...preset.opts })); setShowAdvanced(true); toast.success(`Preset applied: ${preset.label}`); }}
+              onClick={() => {
+                setOpts((o) => ({ ...o, ...preset.opts }));
+                setShowAdvanced(true);
+                toast.success(t("import.preset_applied", { name: preset.label }));
+              }}
               className="px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-300 bg-white hover:bg-slate-50 transition-colors"
             >
               {preset.label}
@@ -274,7 +272,7 @@ export default function ImportPage() {
       {jobs.length > 0 && (
         <div className="card overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-100">
-            <h2 className="text-sm font-semibold text-slate-700">Import History</h2>
+            <h2 className="text-sm font-semibold text-slate-700">{t("import.import_history")}</h2>
           </div>
           {jobs.map((job) => (
             <JobRow key={job.id} job={job} />

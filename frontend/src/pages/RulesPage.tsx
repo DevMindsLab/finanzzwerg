@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import { Plus, Pencil, Trash2, Zap, ToggleLeft, ToggleRight } from "lucide-react";
 import { rulesApi } from "@/api/rules";
@@ -9,12 +10,6 @@ import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
-
-const MATCH_TYPE_OPTIONS = [
-  { value: "substring", label: "Substring (contains)" },
-  { value: "exact",     label: "Exact match" },
-  { value: "regex",     label: "Regular expression" },
-];
 
 interface RuleFormData {
   name: string;
@@ -45,43 +40,47 @@ function RuleForm({
   onSubmit: (data: RuleFormData) => void;
   loading: boolean;
 }) {
+  const { t } = useTranslation();
   const [form, setForm] = useState(initial);
   const set = (k: keyof RuleFormData) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
 
+  const matchTypeOptions = [
+    { value: "substring", label: t("rules.match_substring") },
+    { value: "exact",     label: t("rules.match_exact") },
+    { value: "regex",     label: t("rules.match_regex") },
+  ];
+
   return (
-    <form
-      onSubmit={(e) => { e.preventDefault(); onSubmit(form); }}
-      className="space-y-4"
-    >
-      <Input label="Rule name" value={form.name} onChange={set("name")} required />
+    <form onSubmit={(e) => { e.preventDefault(); onSubmit(form); }} className="space-y-4">
+      <Input label={t("rules.label_name")} value={form.name} onChange={set("name")} required />
       <Input
-        label="Pattern"
+        label={t("rules.label_pattern")}
         value={form.pattern}
         onChange={set("pattern")}
-        hint="Case-insensitive. For substring: 'amazon' matches 'AMAZON PRIME', etc."
+        hint={t("rules.pattern_hint")}
         required
       />
       <Select
-        label="Match type"
-        options={MATCH_TYPE_OPTIONS}
+        label={t("rules.label_match_type")}
+        options={matchTypeOptions}
         value={form.match_type}
         onChange={set("match_type")}
       />
       <Select
-        label="Category"
+        label={t("rules.label_category")}
         options={categoryOptions.map((c) => ({ value: c.value, label: c.label }))}
         value={form.category_id}
         onChange={set("category_id")}
-        placeholder="Choose category…"
+        placeholder={t("rules.choose_category")}
       />
       <Input
-        label="Priority"
+        label={t("rules.label_priority")}
         type="number"
         min={0}
         value={form.priority}
         onChange={set("priority")}
-        hint="Higher number = applied first when multiple rules match"
+        hint={t("rules.priority_hint")}
       />
       <div className="flex items-center gap-2">
         <input
@@ -92,12 +91,12 @@ function RuleForm({
           className="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
         />
         <label htmlFor="is_active" className="text-sm font-medium text-slate-700">
-          Active
+          {t("rules.label_active")}
         </label>
       </div>
       <div className="flex justify-end pt-2">
         <Button type="submit" loading={loading}>
-          Save Rule
+          {t("rules.save")}
         </Button>
       </div>
     </form>
@@ -105,6 +104,7 @@ function RuleForm({
 }
 
 export default function RulesPage() {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
   const [editRule, setEditRule] = useState<Rule | null>(null);
@@ -133,7 +133,7 @@ export default function RulesPage() {
       } as RuleCreate),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["rules"] });
-      toast.success("Rule created");
+      toast.success(t("rules.created"));
       setShowCreate(false);
     },
     onError: (err: Error) => toast.error(err.message),
@@ -151,7 +151,7 @@ export default function RulesPage() {
       } as RuleUpdate),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["rules"] });
-      toast.success("Rule updated");
+      toast.success(t("rules.updated"));
       setEditRule(null);
     },
     onError: (err: Error) => toast.error(err.message),
@@ -167,7 +167,7 @@ export default function RulesPage() {
     mutationFn: rulesApi.delete,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["rules"] });
-      toast.success("Rule deleted");
+      toast.success(t("rules.deleted"));
     },
   });
 
@@ -176,18 +176,17 @@ export default function RulesPage() {
     onSuccess: ({ categorized }) => {
       qc.invalidateQueries({ queryKey: ["inbox"] });
       qc.invalidateQueries({ queryKey: ["inbox-count"] });
-      toast.success(`${categorized} transaction${categorized !== 1 ? "s" : ""} categorized`);
+      toast.success(t("rules.applied", { count: categorized }));
     },
   });
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Rules</h1>
+          <h1 className="text-2xl font-bold text-slate-900">{t("rules.title")}</h1>
           <p className="text-sm text-slate-500 mt-0.5">
-            {rules.length} rule{rules.length !== 1 ? "s" : ""} · Applied on import
+            {t("rules.subtitle", { count: rules.length })}
           </p>
         </div>
         <div className="flex gap-2">
@@ -197,15 +196,14 @@ export default function RulesPage() {
             loading={applyMutation.isPending}
             onClick={() => applyMutation.mutate()}
           >
-            Apply All
+            {t("rules.apply_all")}
           </Button>
           <Button icon={<Plus className="w-4 h-4" />} onClick={() => setShowCreate(true)}>
-            New Rule
+            {t("rules.new_rule")}
           </Button>
         </div>
       </div>
 
-      {/* Rules table */}
       <div className="card overflow-hidden">
         {isLoading ? (
           <div className="flex items-center justify-center h-40">
@@ -214,18 +212,18 @@ export default function RulesPage() {
         ) : rules.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-40 gap-2 text-slate-400">
             <Zap className="w-10 h-10 opacity-40" />
-            <p className="text-sm">No rules yet — create one to auto-categorize transactions</p>
+            <p className="text-sm">{t("rules.no_rules")}</p>
           </div>
         ) : (
           <table className="w-full text-sm">
             <thead className="border-b border-slate-100 bg-slate-50">
               <tr>
-                <th className="text-left px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Rule</th>
-                <th className="text-left px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Pattern</th>
-                <th className="text-left px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Type</th>
-                <th className="text-left px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Category</th>
-                <th className="text-center px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Priority</th>
-                <th className="text-center px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Active</th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">{t("rules.col_rule")}</th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">{t("rules.col_pattern")}</th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">{t("rules.col_type")}</th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">{t("rules.col_category")}</th>
+                <th className="text-center px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">{t("rules.col_priority")}</th>
+                <th className="text-center px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">{t("rules.col_active")}</th>
                 <th className="px-6 py-3" />
               </tr>
             </thead>
@@ -253,7 +251,6 @@ export default function RulesPage() {
                     <button
                       onClick={() => toggleMutation.mutate({ id: rule.id, is_active: !rule.is_active })}
                       className="text-slate-400 hover:text-brand-600 transition-colors"
-                      title={rule.is_active ? "Deactivate" : "Activate"}
                     >
                       {rule.is_active ? (
                         <ToggleRight className="w-5 h-5 text-brand-600" />
@@ -272,7 +269,7 @@ export default function RulesPage() {
                       </button>
                       <button
                         onClick={() => {
-                          if (confirm(`Delete rule "${rule.name}"?`)) {
+                          if (confirm(t("rules.delete_confirm", { name: rule.name }))) {
                             deleteMutation.mutate(rule.id);
                           }
                         }}
@@ -289,12 +286,7 @@ export default function RulesPage() {
         )}
       </div>
 
-      {/* Create modal */}
-      <Modal
-        isOpen={showCreate}
-        onClose={() => setShowCreate(false)}
-        title="New Rule"
-      >
+      <Modal isOpen={showCreate} onClose={() => setShowCreate(false)} title={t("rules.new_title")}>
         <RuleForm
           initial={EMPTY_FORM}
           categoryOptions={categoryOptions}
@@ -303,12 +295,7 @@ export default function RulesPage() {
         />
       </Modal>
 
-      {/* Edit modal */}
-      <Modal
-        isOpen={!!editRule}
-        onClose={() => setEditRule(null)}
-        title="Edit Rule"
-      >
+      <Modal isOpen={!!editRule} onClose={() => setEditRule(null)} title={t("rules.edit_title")}>
         {editRule && (
           <RuleForm
             initial={{

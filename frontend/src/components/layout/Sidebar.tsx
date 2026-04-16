@@ -8,6 +8,7 @@ import {
   Upload,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { transactionsApi } from "@/api/transactions";
 import { cn } from "@/lib/utils";
 
@@ -43,6 +44,8 @@ function SidebarLink({ item }: { item: NavItem }) {
 }
 
 export default function Sidebar() {
+  const { t, i18n } = useTranslation();
+
   const { data: inboxCount = 0 } = useQuery({
     queryKey: ["inbox-count"],
     queryFn: transactionsApi.inboxCount,
@@ -50,13 +53,19 @@ export default function Sidebar() {
   });
 
   const navItems: NavItem[] = [
-    { label: "Dashboard",    to: "/dashboard",    icon: BarChart3 },
-    { label: "Inbox",        to: "/inbox",        icon: Inbox, badge: inboxCount },
-    { label: "Transactions", to: "/transactions", icon: List },
-    { label: "Rules",        to: "/rules",        icon: Zap },
-    { label: "Categories",   to: "/categories",   icon: Tag },
-    { label: "Import",       to: "/import",       icon: Upload },
+    { label: t("nav.dashboard"),    to: "/dashboard",    icon: BarChart3 },
+    { label: t("nav.inbox"),        to: "/inbox",        icon: Inbox, badge: inboxCount },
+    { label: t("nav.transactions"), to: "/transactions", icon: List },
+    { label: t("nav.rules"),        to: "/rules",        icon: Zap },
+    { label: t("nav.categories"),   to: "/categories",   icon: Tag },
+    { label: t("nav.import"),       to: "/import",       icon: Upload },
   ];
+
+  const currentLang = i18n.resolvedLanguage ?? i18n.language;
+
+  const toggleLanguage = () => {
+    i18n.changeLanguage(currentLang.startsWith("de") ? "en" : "de");
+  };
 
   return (
     <aside className="w-60 shrink-0 flex flex-col bg-slate-900 border-r border-slate-800 h-full">
@@ -80,8 +89,17 @@ export default function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-slate-800">
-        <p className="text-slate-600 text-xs text-center">Financeless v0.1.0</p>
+      <div className="p-4 border-t border-slate-800 flex items-center justify-between">
+        <p className="text-slate-600 text-xs">Financeless v0.1.0</p>
+        <button
+          onClick={toggleLanguage}
+          className="flex items-center gap-1 rounded-md border border-slate-700 px-2 py-1 text-xs font-medium text-slate-400 hover:border-slate-500 hover:text-white transition-colors"
+          title={currentLang.startsWith("de") ? "Switch to English" : "Zu Deutsch wechseln"}
+        >
+          <span className={currentLang.startsWith("de") ? "text-white" : "text-slate-500"}>DE</span>
+          <span className="text-slate-600">/</span>
+          <span className={!currentLang.startsWith("de") ? "text-white" : "text-slate-500"}>EN</span>
+        </button>
       </div>
     </aside>
   );

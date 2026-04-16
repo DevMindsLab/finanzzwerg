@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Search, SlidersHorizontal } from "lucide-react";
 import { transactionsApi } from "@/api/transactions";
 import { categoriesApi } from "@/api/categories";
@@ -9,26 +10,14 @@ import Badge from "@/components/ui/Badge";
 import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
 
-const STATUS_LABELS: Record<TransactionStatus, string> = {
-  uncategorized: "Uncategorized",
-  categorized: "Categorized",
-  ignored: "Ignored",
-};
-
-const STATUS_BADGE_VARIANT: Record<TransactionStatus, "warning" | "success" | "default"> = {
-  uncategorized: "warning",
-  categorized: "success",
-  ignored: "default",
-};
-
 export default function TransactionsPage() {
+  const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [categoryFilter, setCategoryFilter] = useState<string>("");
 
-  // Simple debounce
   const handleSearchChange = (value: string) => {
     setSearch(value);
     clearTimeout((window as unknown as { _st: number })._st);
@@ -60,15 +49,27 @@ export default function TransactionsPage() {
   const total = data?.total ?? 0;
   const pages = data?.pages ?? 1;
 
+  const STATUS_LABELS: Record<TransactionStatus, string> = {
+    uncategorized: t("transactions.status_uncategorized"),
+    categorized: t("transactions.status_categorized"),
+    ignored: t("transactions.status_ignored"),
+  };
+
+  const STATUS_BADGE_VARIANT: Record<TransactionStatus, "warning" | "success" | "default"> = {
+    uncategorized: "warning",
+    categorized: "success",
+    ignored: "default",
+  };
+
   const statusOptions = [
-    { value: "", label: "All statuses" },
-    { value: "uncategorized", label: "Uncategorized" },
-    { value: "categorized", label: "Categorized" },
-    { value: "ignored", label: "Ignored" },
+    { value: "", label: t("transactions.all_statuses") },
+    { value: "uncategorized", label: t("transactions.status_uncategorized") },
+    { value: "categorized", label: t("transactions.status_categorized") },
+    { value: "ignored", label: t("transactions.status_ignored") },
   ];
 
   const categoryOptions = [
-    { value: "", label: "All categories" },
+    { value: "", label: t("transactions.all_categories") },
     ...categories.map((c) => ({ value: c.id, label: c.name })),
   ];
 
@@ -77,8 +78,10 @@ export default function TransactionsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Transactions</h1>
-          <p className="text-sm text-slate-500 mt-0.5">{total} transactions total</p>
+          <h1 className="text-2xl font-bold text-slate-900">{t("transactions.title")}</h1>
+          <p className="text-sm text-slate-500 mt-0.5">
+            {t("transactions.subtitle", { count: total })}
+          </p>
         </div>
       </div>
 
@@ -86,7 +89,7 @@ export default function TransactionsPage() {
       <div className="card p-4 flex flex-wrap gap-3 items-end">
         <div className="flex-1 min-w-48">
           <Input
-            placeholder="Search descriptions…"
+            placeholder={t("transactions.search_placeholder")}
             value={search}
             onChange={(e) => handleSearchChange(e.target.value)}
             prefix={<Search className="w-4 h-4" />}
@@ -117,17 +120,17 @@ export default function TransactionsPage() {
         ) : transactions.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 gap-2 text-slate-400">
             <SlidersHorizontal className="w-10 h-10 opacity-40" />
-            <p className="text-sm">No transactions found</p>
+            <p className="text-sm">{t("transactions.no_transactions")}</p>
           </div>
         ) : (
           <table className="w-full text-sm">
             <thead className="border-b border-slate-100 bg-slate-50">
               <tr>
-                <th className="text-left px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Date</th>
-                <th className="text-left px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Description</th>
-                <th className="text-left px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Category</th>
-                <th className="text-left px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Status</th>
-                <th className="text-right px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Amount</th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">{t("transactions.col_date")}</th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">{t("transactions.col_description")}</th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">{t("transactions.col_category")}</th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">{t("transactions.col_status")}</th>
+                <th className="text-right px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">{t("transactions.col_amount")}</th>
               </tr>
             </thead>
             <tbody>
@@ -175,17 +178,17 @@ export default function TransactionsPage() {
             onClick={() => setPage((p) => p - 1)}
             className="px-4 py-2 text-sm rounded-lg border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            Previous
+            {t("transactions.previous")}
           </button>
           <span className="text-sm text-slate-600">
-            Page {page} of {pages} · {total} total
+            {t("transactions.page_info", { page, pages, total })}
           </span>
           <button
             disabled={page >= pages}
             onClick={() => setPage((p) => p + 1)}
             className="px-4 py-2 text-sm rounded-lg border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            Next
+            {t("transactions.next")}
           </button>
         </div>
       )}

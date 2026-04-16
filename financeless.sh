@@ -359,19 +359,29 @@ load_docker_cmd() {
 prepare_lockfile() {
   section "Checking frontend lockfile"
 
-  if [[ -f "$SCRIPT_DIR/frontend/package-lock.json" ]]; then
-    ok "frontend/package-lock.json present"
-    return
+  local pkg="$SCRIPT_DIR/frontend/package.json"
+  local lock="$SCRIPT_DIR/frontend/package-lock.json"
+
+  local need_regen=false
+  if [[ ! -f "$lock" ]]; then
+    warn "frontend/package-lock.json missing — generating via Docker (no Node.js required on host)..."
+    need_regen=true
+  elif [[ "$pkg" -nt "$lock" ]]; then
+    warn "package.json was updated — regenerating package-lock.json via Docker..."
+    need_regen=true
   fi
 
-  warn "frontend/package-lock.json missing — generating via Docker (no Node.js required on host)..."
-  docker run --rm \
-    -v "$SCRIPT_DIR/frontend:/app" \
-    -w /app \
-    node:20-alpine \
-    npm install --package-lock-only \
-    || die "Failed to generate frontend/package-lock.json. Check your internet connection and try again."
-  ok "frontend/package-lock.json generated"
+  if [[ "$need_regen" == "true" ]]; then
+    docker run --rm \
+      -v "$SCRIPT_DIR/frontend:/app" \
+      -w /app \
+      node:20-alpine \
+      npm install --package-lock-only \
+      || die "Failed to generate frontend/package-lock.json. Check your internet connection and try again."
+    ok "frontend/package-lock.json generated/updated"
+  else
+    ok "frontend/package-lock.json is up to date"
+  fi
 }
 
 # =============================================================================
@@ -601,6 +611,8 @@ cmd_update() {
     warn "Not a git repository and GIT_REPO_URL is not set in .env."
     warn "Rebuilding with current files only."
   fi
+
+  prepare_lockfile
 
   section "Rebuilding containers"
   cd "$SCRIPT_DIR"

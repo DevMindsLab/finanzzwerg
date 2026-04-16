@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { categoriesApi } from "@/api/categories";
@@ -30,20 +31,20 @@ function CategoryForm({
   onSubmit: (data: FormData) => void;
   loading: boolean;
 }) {
+  const { t } = useTranslation();
   const [form, setForm] = useState(initial);
 
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSubmit(form); }} className="space-y-4">
       <Input
-        label="Name"
+        label={t("categories.label_name")}
         value={form.name}
         onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
         required
       />
 
-      {/* Color picker */}
       <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium text-slate-700">Color</label>
+        <label className="text-sm font-medium text-slate-700">{t("categories.label_color")}</label>
         <div className="flex flex-wrap gap-2">
           {PRESET_COLORS.map((color) => (
             <button
@@ -63,7 +64,7 @@ function CategoryForm({
           value={form.color}
           onChange={(e) => setForm((f) => ({ ...f, color: e.target.value }))}
           placeholder="#6b7280"
-          hint="Hex color code"
+          hint={t("categories.color_hint")}
         />
       </div>
 
@@ -76,13 +77,13 @@ function CategoryForm({
           className="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
         />
         <label htmlFor="is_income" className="text-sm font-medium text-slate-700">
-          This is an income category
+          {t("categories.is_income")}
         </label>
       </div>
 
       <div className="flex justify-end pt-2">
         <Button type="submit" loading={loading}>
-          Save Category
+          {t("categories.save")}
         </Button>
       </div>
     </form>
@@ -90,6 +91,7 @@ function CategoryForm({
 }
 
 export default function CategoriesPage() {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
   const [editCat, setEditCat] = useState<Category | null>(null);
@@ -104,7 +106,7 @@ export default function CategoriesPage() {
       categoriesApi.create(data as unknown as CategoryCreate),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["categories"] });
-      toast.success("Category created");
+      toast.success(t("categories.created"));
       setShowCreate(false);
     },
     onError: (err: Error) => toast.error(err.message),
@@ -115,7 +117,7 @@ export default function CategoriesPage() {
       categoriesApi.update(id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["categories"] });
-      toast.success("Category updated");
+      toast.success(t("categories.updated"));
       setEditCat(null);
     },
     onError: (err: Error) => toast.error(err.message),
@@ -125,7 +127,7 @@ export default function CategoriesPage() {
     mutationFn: categoriesApi.delete,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["categories"] });
-      toast.success("Category deleted");
+      toast.success(t("categories.deleted"));
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -145,8 +147,8 @@ export default function CategoriesPage() {
         <div className="flex-1 min-w-0">
           <p className="font-medium text-slate-900">{cat.name}</p>
           <p className="text-xs text-slate-500">
-            {cat.transaction_count} transaction{cat.transaction_count !== 1 ? "s" : ""}
-            {cat.is_default && " · Default"}
+            {t("categories.transaction_count", { count: cat.transaction_count })}
+            {cat.is_default && ` · ${t("categories.is_default")}`}
           </p>
         </div>
         <div className="flex items-center gap-1">
@@ -159,7 +161,7 @@ export default function CategoriesPage() {
           {!cat.is_default && (
             <button
               onClick={() => {
-                if (confirm(`Delete "${cat.name}"? Linked transactions will be uncategorized.`)) {
+                if (confirm(t("categories.delete_confirm", { name: cat.name }))) {
                   deleteMutation.mutate(cat.id);
                 }
               }}
@@ -177,11 +179,13 @@ export default function CategoriesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Categories</h1>
-          <p className="text-sm text-slate-500 mt-0.5">{categories.length} categories total</p>
+          <h1 className="text-2xl font-bold text-slate-900">{t("categories.title")}</h1>
+          <p className="text-sm text-slate-500 mt-0.5">
+            {t("categories.subtitle", { count: categories.length })}
+          </p>
         </div>
         <Button icon={<Plus className="w-4 h-4" />} onClick={() => setShowCreate(true)}>
-          New Category
+          {t("categories.new_category")}
         </Button>
       </div>
 
@@ -191,34 +195,35 @@ export default function CategoriesPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Income */}
           <div className="card overflow-hidden">
             <div className="px-4 py-3 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
-              <Badge variant="success">Income</Badge>
-              <span className="text-xs text-slate-500">{income.length} categories</span>
+              <Badge variant="success">{t("categories.income")}</Badge>
+              <span className="text-xs text-slate-500">
+                {t("categories.subtitle", { count: income.length })}
+              </span>
             </div>
             {income.length === 0 ? (
               <div className="flex items-center justify-center h-20 text-slate-400 text-sm">
-                No income categories
+                {t("categories.no_income")}
               </div>
             ) : (
               income.map((cat) => <CategoryCard key={cat.id} cat={cat} />)
             )}
           </div>
 
-          {/* Expense */}
           <div className="card overflow-hidden">
             <div className="px-4 py-3 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
-              <Badge variant="danger">Expense</Badge>
-              <span className="text-xs text-slate-500">{expense.length} categories</span>
+              <Badge variant="danger">{t("categories.expense")}</Badge>
+              <span className="text-xs text-slate-500">
+                {t("categories.subtitle", { count: expense.length })}
+              </span>
             </div>
             {expense.map((cat) => <CategoryCard key={cat.id} cat={cat} />)}
           </div>
         </div>
       )}
 
-      {/* Modals */}
-      <Modal isOpen={showCreate} onClose={() => setShowCreate(false)} title="New Category">
+      <Modal isOpen={showCreate} onClose={() => setShowCreate(false)} title={t("categories.new_title")}>
         <CategoryForm
           initial={{ name: "", color: "#6366f1", is_income: false }}
           onSubmit={(data) => createMutation.mutate(data)}
@@ -226,7 +231,7 @@ export default function CategoriesPage() {
         />
       </Modal>
 
-      <Modal isOpen={!!editCat} onClose={() => setEditCat(null)} title="Edit Category">
+      <Modal isOpen={!!editCat} onClose={() => setEditCat(null)} title={t("categories.edit_title")}>
         {editCat && (
           <CategoryForm
             initial={{ name: editCat.name, color: editCat.color, is_income: editCat.is_income }}
