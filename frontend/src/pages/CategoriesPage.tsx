@@ -158,18 +158,16 @@ export default function CategoriesPage() {
           >
             <Pencil className="w-4 h-4" />
           </button>
-          {!cat.is_default && (
-            <button
-              onClick={() => {
-                if (confirm(t("categories.delete_confirm", { name: cat.name }))) {
-                  deleteMutation.mutate(cat.id);
-                }
-              }}
-              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          )}
+          <button
+            onClick={() => {
+              if (confirm(t("categories.delete_confirm", { name: cat.name }))) {
+                deleteMutation.mutate(cat.id);
+              }
+            }}
+            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
         </div>
       </div>
     );
