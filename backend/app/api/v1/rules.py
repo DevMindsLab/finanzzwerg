@@ -18,7 +18,9 @@ def list_rules(
 
 @router.post("/", response_model=RuleResponse, status_code=status.HTTP_201_CREATED)
 def create_rule(data: RuleCreate, db: Session = DB):
-    return rule_service.create(db, data)
+    rule = rule_service.create(db, data)
+    rule_service.reapply_all_rules(db)
+    return rule
 
 
 @router.get("/{rule_id}", response_model=RuleResponse)
@@ -34,6 +36,7 @@ def update_rule(rule_id: int, data: RuleUpdate, db: Session = DB):
     rule = rule_service.update(db, rule_id, data)
     if not rule:
         raise HTTPException(status_code=404, detail="Rule not found.")
+    rule_service.reapply_all_rules(db)
     return rule
 
 
@@ -45,6 +48,6 @@ def delete_rule(rule_id: int, db: Session = DB):
 
 @router.post("/apply", response_model=dict)
 def apply_rules(db: Session = DB):
-    """Re-apply all active rules to every uncategorized transaction."""
-    count = rule_service.apply_rules_to_transactions(db)
+    """Re-apply all active rules to all transactions (including already-categorized)."""
+    count = rule_service.reapply_all_rules(db)
     return {"categorized": count}

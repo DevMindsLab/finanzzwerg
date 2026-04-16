@@ -126,5 +126,37 @@ class RuleService:
         )
         return categorized
 
+    def reapply_all_rules(self, db: Session) -> int:
+        """
+        Apply all active rules to ALL transactions, overriding existing
+        categorizations where a rule matches.
+
+        Used after creating or updating a rule so that existing transactions
+        are re-categorized immediately.
+        Returns the count of updated transactions.
+        """
+        rules = self.get_all(db, active_only=True)
+        if not rules:
+            return 0
+
+        transactions = db.query(Transaction).all()
+        updated = 0
+
+        for txn in transactions:
+            rule = self.find_matching_rule(rules, txn.description)
+            if rule:
+                if txn.category_id != rule.category_id or txn.status != TransactionStatus.CATEGORIZED:
+                    txn.category_id = rule.category_id
+                    txn.status = TransactionStatus.CATEGORIZED
+                    updated += 1
+
+        if updated:
+            db.commit()
+
+        logger.info(
+            "Rule engine (reapply): %d/%d transactions updated", updated, len(transactions)
+        )
+        return updated
+
 
 rule_service = RuleService()

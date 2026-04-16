@@ -3,13 +3,16 @@ import { useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
-import { Search, SlidersHorizontal, X, Pencil } from "lucide-react";
+import { Search, SlidersHorizontal, X, Pencil, Zap } from "lucide-react";
 import { transactionsApi } from "@/api/transactions";
 import { categoriesApi } from "@/api/categories";
-import type { TransactionStatus } from "@/types";
+import { rulesApi } from "@/api/rules";
+import type { TransactionStatus, MatchType } from "@/types";
 import { formatCurrency, formatDate, amountColor } from "@/lib/utils";
 import Badge from "@/components/ui/Badge";
 import Select from "@/components/ui/Select";
+import Modal from "@/components/ui/Modal";
+import Input from "@/components/ui/Input";
 
 interface Filters {
   status: string;
@@ -40,6 +43,7 @@ export default function TransactionsPage() {
   const qc = useQueryClient();
   const [searchParams] = useSearchParams();
   const [editingCategoryId, setEditingCategoryId] = useState<number | null>(null);
+  const [createRuleDesc, setCreateRuleDesc] = useState<string | null>(null);
 
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -102,6 +106,26 @@ export default function TransactionsPage() {
       qc.invalidateQueries({ queryKey: ["transactions"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       qc.invalidateQueries({ queryKey: ["budgets"] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const createRuleMutation = useMutation({
+    mutationFn: (payload: { name: string; pattern: string; match_type: MatchType; category_id: number }) =>
+      rulesApi.create({
+        name: payload.name,
+        pattern: payload.pattern,
+        match_type: payload.match_type,
+        category_id: payload.category_id,
+        is_active: true,
+        priority: 0,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["transactions"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: ["budgets"] });
+      qc.invalidateQueries({ queryKey: ["rules"] });
+      setCreateRuleDesc(null);
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -323,8 +347,15 @@ export default function TransactionsPage() {
               {transactions.map((txn) => (
                 <tr key={txn.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors">
                   <td className="px-6 py-3 text-slate-600 whitespace-nowrap">{formatDate(txn.date)}</td>
-                  <td className="px-6 py-3 text-slate-800 max-w-xs truncate" title={txn.description}>
-                    {txn.description}
+                  <td className="px-6 py-3 max-w-xs">
+                    <button
+                      onClick={() => setCreateRuleDesc(txn.description)}
+                      className="group/desc flex items-center gap-1.5 text-left truncate max-w-full"
+                      title={t("transactions.create_rule_title")}
+                    >
+                      <span className="text-slate-800 truncate">{txn.description}</span>
+                      <Zap className="w-3 h-3 shrink-0 opacity-0 group-hover/desc:opacity-100 text-brand-400 transition-opacity" />
+                    </button>
                   </td>
                   <td className="px-6 py-3">
                     {editingCategoryId === txn.id ? (
@@ -397,6 +428,111 @@ export default function TransactionsPage() {
           </button>
         </div>
       )}
+
+      {/* Create Rule Modal */}
+      {createRuleDesc !== null && (
+        <CreateRuleModal
+          description={createRuleDesc}
+          categoryOptions={categoryOptions}
+          isPending={createRuleMutation.isPending}
+          onSave={(name, pattern, matchType, categoryId) =>
+            createRuleMutation.mutate({ name, pattern, match_type: matchType, category_id: categoryId })
+          }
+          onClose={() => setCreateRuleDesc(null)}
+        />
+      )}
+
     </div>
+  );
+}
+
+// ── CreateRuleModal ────────────────────────────────────────────────────────────
+
+function CreateRuleModal({
+  description,
+  categoryOptions,
+  isPending,
+  onSave,
+  onClose,
+}: {
+  description: string;
+  categoryOptions: { value: number; label: string }[];
+  isPending: boolean;
+  onSave: (name: string, pattern: string, matchType: MatchType, categoryId: number) => void;
+  onClose: () => void;
+}) {
+  const { t } = useTranslation();
+  const [name, setName] = useState(description.slice(0, 60));
+  const [pattern, setPattern] = useState(description);
+  const [matchType, setMatchType] = useState<MatchType>("substring");
+  const [categoryId, setCategoryId] = useState("");
+
+  const matchTypeOptions = [
+    { value: "substring", label: t("rules.match_substring") },
+    { value: "exact",     label: t("rules.match_exact") },
+    { value: "regex",     label: t("rules.match_regex") },
+  ];
+
+  const allCategoryOptions = [
+    { value: "", label: `— ${t("rules.choose_category")} —` },
+    ...categoryOptions.map((c) => ({ value: String(c.value), label: c.label })),
+  ];
+
+  const canSave = name.trim().length > 0 && pattern.trim().length > 0 && categoryId !== "";
+
+  return (
+    <Modal
+      isOpen
+      onClose={onClose}
+      title={t("transactions.create_rule_title")}
+      size="sm"
+      footer={
+        <>
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 bg-white hover:bg-slate-50 transition-colors"
+          >
+            {t("common.cancel")}
+          </button>
+          <button
+            onClick={() => onSave(name, pattern, matchType, parseInt(categoryId))}
+            disabled={!canSave || isPending}
+            className="px-4 py-2 text-sm font-medium rounded-lg bg-brand-600 text-white hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {t("rules.save")}
+          </button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <p className="text-sm text-slate-500">{t("transactions.create_rule_desc")}</p>
+        <code className="block text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-700 break-all">
+          {description}
+        </code>
+        <Input
+          label={t("transactions.create_rule_name")}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <Input
+          label={t("transactions.create_rule_pattern")}
+          value={pattern}
+          onChange={(e) => setPattern(e.target.value)}
+          hint={t("rules.pattern_hint")}
+        />
+        <Select
+          label={t("transactions.create_rule_type")}
+          options={matchTypeOptions}
+          value={matchType}
+          onChange={(e) => setMatchType(e.target.value as MatchType)}
+        />
+        <Select
+          label={t("transactions.create_rule_category")}
+          options={allCategoryOptions}
+          value={categoryId}
+          onChange={(e) => setCategoryId(e.target.value)}
+        />
+      </div>
+    </Modal>
   );
 }

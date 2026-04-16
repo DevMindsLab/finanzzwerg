@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
@@ -141,10 +142,12 @@ function BudgetCard({
   budget,
   onEdit,
   onDelete,
+  onClick,
 }: {
   budget: Budget;
   onEdit: () => void;
   onDelete: () => void;
+  onClick: () => void;
 }) {
   const { t } = useTranslation();
   const pct = Math.min(budget.percentage, 100);
@@ -152,7 +155,7 @@ function BudgetCard({
   const remaining = parseFloat(budget.remaining);
 
   return (
-    <div className="card p-5 group">
+    <div className="card p-5 group cursor-pointer hover:shadow-md transition-shadow" onClick={onClick}>
       <div className="flex items-start justify-between gap-3 mb-3">
         {/* Category name + color dot */}
         <div className="flex items-center gap-2 min-w-0">
@@ -166,14 +169,14 @@ function BudgetCard({
         {/* Actions (show on hover) */}
         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
           <button
-            onClick={onEdit}
+            onClick={(e) => { e.stopPropagation(); onEdit(); }}
             className="p-1.5 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-colors"
             title={t("budget.edit")}
           >
             <Pencil className="w-3.5 h-3.5" />
           </button>
           <button
-            onClick={onDelete}
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
             className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
             title={t("common.delete")}
           >
@@ -215,10 +218,22 @@ function BudgetCard({
 export default function BudgetPage() {
   const { t } = useTranslation();
   const qc = useQueryClient();
+  const navigate = useNavigate();
 
   const today = new Date();
   const [year, setYear]   = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth() + 1); // 1-based
+
+  const buildMonthParams = (categoryId: number) => {
+    const mm = String(month).padStart(2, "0");
+    const lastDay = new Date(year, month, 0).getDate();
+    return new URLSearchParams({
+      date_from: `${year}-${mm}-01`,
+      date_to: `${year}-${mm}-${String(lastDay).padStart(2, "0")}`,
+      transaction_type: "expense",
+      category_id: String(categoryId),
+    }).toString();
+  };
 
   const [modal, setModal] = useState<null | { budget?: Budget }>(null);
 
@@ -362,6 +377,7 @@ export default function BudgetPage() {
               budget={budget}
               onEdit={() => setModal({ budget })}
               onDelete={() => handleDelete(budget)}
+              onClick={() => navigate(`/transactions?${buildMonthParams(budget.category_id)}`)}
             />
           ))}
         </div>
