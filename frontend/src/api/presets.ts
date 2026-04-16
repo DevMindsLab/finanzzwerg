@@ -2,6 +2,11 @@ import client from "./client";
 import type { UploadOptions } from "./imports";
 import type { ImportPreset } from "@/types";
 
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+/** Preset with profile already converted to frontend UploadOptions */
+export type ResolvedPreset = Omit<ImportPreset, "profile"> & { profile: UploadOptions };
+
 // ── Conversion helpers ────────────────────────────────────────────────────────
 
 /** Frontend UploadOptions → backend CSVProfile (description_columns as list) */
@@ -34,38 +39,31 @@ function normalise(raw: {
   profile: Record<string, unknown>;
   created_at: string;
   updated_at: string;
-}): ImportPreset & { profile: UploadOptions } {
+}): ResolvedPreset {
   return { ...raw, profile: toFrontendOpts(raw.profile) };
 }
 
 // ── API ───────────────────────────────────────────────────────────────────────
 
 export const presetsApi = {
-  list: async (): Promise<(ImportPreset & { profile: UploadOptions })[]> => {
-    const { data } = await client.get("/presets/");
-    return (data as ReturnType<typeof normalise>[]).map(normalise);
+  list: async (): Promise<ResolvedPreset[]> => {
+    const { data } = await client.get<
+      { id: number; name: string; profile: Record<string, unknown>; created_at: string; updated_at: string }[]
+    >("/presets/");
+    return data.map(normalise);
   },
 
-  create: async (
-    name: string,
-    opts: UploadOptions,
-  ): Promise<ImportPreset & { profile: UploadOptions }> => {
-    const { data } = await client.post("/presets/", {
-      name,
-      profile: toBackendProfile(opts),
-    });
+  create: async (name: string, opts: UploadOptions): Promise<ResolvedPreset> => {
+    const { data } = await client.post<{
+      id: number; name: string; profile: Record<string, unknown>; created_at: string; updated_at: string;
+    }>("/presets/", { name, profile: toBackendProfile(opts) });
     return normalise(data);
   },
 
-  update: async (
-    id: number,
-    name: string,
-    opts: UploadOptions,
-  ): Promise<ImportPreset & { profile: UploadOptions }> => {
-    const { data } = await client.put(`/presets/${id}`, {
-      name,
-      profile: toBackendProfile(opts),
-    });
+  update: async (id: number, name: string, opts: UploadOptions): Promise<ResolvedPreset> => {
+    const { data } = await client.put<{
+      id: number; name: string; profile: Record<string, unknown>; created_at: string; updated_at: string;
+    }>(`/presets/${id}`, { name, profile: toBackendProfile(opts) });
     return normalise(data);
   },
 

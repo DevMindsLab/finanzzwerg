@@ -18,8 +18,8 @@ import {
   BookOpen,
 } from "lucide-react";
 import { importsApi, type UploadOptions } from "@/api/imports";
-import { presetsApi } from "@/api/presets";
-import type { ImportJob, ImportPreset } from "@/types";
+import { presetsApi, type ResolvedPreset } from "@/api/presets";
+import type { ImportJob } from "@/types";
 import { formatDate } from "@/lib/utils";
 import Input from "@/components/ui/Input";
 import Badge from "@/components/ui/Badge";
@@ -167,7 +167,7 @@ function HelpDialog({ onClose }: { onClose: () => void }) {
 
 interface PresetModalProps {
   mode: "create" | "edit";
-  preset?: ImportPreset & { profile: UploadOptions };
+  preset?: ResolvedPreset;
   currentOpts: UploadOptions;
   isPending: boolean;
   onSave: (name: string, profile: UploadOptions) => void;
@@ -275,7 +275,7 @@ export default function ImportPage() {
 
   // Preset modal state: null = closed; "create" | edit preset
   const [presetModal, setPresetModal] = useState<
-    null | { mode: "create" } | { mode: "edit"; preset: ImportPreset & { profile: UploadOptions } }
+    null | { mode: "create" } | { mode: "edit"; preset: ResolvedPreset }
   >(null);
   const [helpOpen, setHelpOpen] = useState(false);
 
@@ -401,7 +401,7 @@ export default function ImportPage() {
     handleFile(e.dataTransfer.files[0] ?? null);
   };
 
-  const applyPreset = (preset: ImportPreset & { profile: UploadOptions }) => {
+  const applyPreset = (preset: ResolvedPreset) => {
     setOpts((o) => ({ ...o, ...preset.profile }));
     setShowAdvanced(true);
     toast.success(t("import.preset_applied", { name: preset.name }));
@@ -415,7 +415,7 @@ export default function ImportPage() {
     }
   };
 
-  const handleDeletePreset = (preset: ImportPreset & { profile: UploadOptions }) => {
+  const handleDeletePreset = (preset: ResolvedPreset) => {
     if (confirm(t("import.preset_delete_confirm", { name: preset.name }))) {
       deletePresetMutation.mutate(preset.id);
     }
