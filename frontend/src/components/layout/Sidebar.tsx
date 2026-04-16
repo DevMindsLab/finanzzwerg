@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   BarChart3,
@@ -8,11 +9,13 @@ import {
   Tag,
   Upload,
   LogOut,
+  Settings,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { transactionsApi } from "@/api/transactions";
 import { useAuth } from "@/contexts/AuthContext";
+import AccountModal from "@/components/AccountModal";
 import { cn } from "@/lib/utils";
 
 interface NavItem {
@@ -50,6 +53,7 @@ export default function Sidebar() {
   const { t, i18n } = useTranslation();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [accountOpen, setAccountOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -102,16 +106,24 @@ export default function Sidebar() {
       {/* Footer */}
       <div className="p-4 border-t border-slate-800 space-y-3">
         {/* User row */}
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-slate-400 text-xs truncate min-w-0">{user?.email}</span>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setAccountOpen(true)}
+            title={t("auth.profile_title")}
+            className="flex-1 min-w-0 flex items-center gap-2 rounded-md px-2 py-1.5 text-left hover:bg-slate-800 transition-colors group"
+          >
+            <Settings className="w-3.5 h-3.5 text-slate-500 shrink-0 group-hover:text-slate-300" />
+            <span className="text-slate-400 text-xs truncate group-hover:text-slate-200">{user?.email}</span>
+          </button>
           <button
             onClick={handleLogout}
             title={t("auth.logout")}
-            className="shrink-0 flex items-center gap-1 rounded-md border border-slate-700 px-2 py-1 text-xs font-medium text-slate-400 hover:border-rose-600 hover:text-rose-400 transition-colors"
+            className="shrink-0 flex items-center rounded-md border border-slate-700 px-2 py-1.5 text-slate-400 hover:border-rose-600 hover:text-rose-400 transition-colors"
           >
             <LogOut className="w-3.5 h-3.5" />
           </button>
         </div>
+        <AccountModal open={accountOpen} onClose={() => setAccountOpen(false)} />
         {/* Version + language */}
         <div className="flex items-center justify-between">
           <p className="text-slate-600 text-xs">Financeless v0.2.0</p>

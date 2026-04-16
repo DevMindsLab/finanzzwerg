@@ -11,6 +11,12 @@ export interface RegisterPayload {
   password: string;
 }
 
+export interface UpdateProfilePayload {
+  email?: string;
+  current_password?: string;
+  new_password?: string;
+}
+
 export const authApi = {
   login: async (payload: LoginPayload): Promise<TokenResponse> => {
     const { data } = await client.post<TokenResponse>("/auth/login", payload);
@@ -24,6 +30,11 @@ export const authApi = {
 
   me: async (): Promise<User> => {
     const { data } = await client.get<User>("/auth/me");
+    return data;
+  },
+
+  updateProfile: async (payload: UpdateProfilePayload): Promise<User> => {
+    const { data } = await client.patch<User>("/auth/me", payload);
     return data;
   },
 };
