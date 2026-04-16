@@ -63,7 +63,7 @@ export default function AccountModal({ open, onClose }: Props) {
   };
 
   return (
-    <Modal open={open} onClose={handleClose} title={t("auth.profile_title")}>
+    <Modal isOpen={open} onClose={handleClose} title={t("auth.profile_title")}>
       <form onSubmit={handleSave} className="space-y-4">
         {/* Email */}
         <Input
