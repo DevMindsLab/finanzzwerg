@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.v1 import categories, dashboard, imports, rules, transactions
+from app.api.v1 import categories, dashboard, imports, presets, rules, transactions
 from app.config import settings
 from app.core.seeder import seed_default_categories
 
@@ -49,6 +49,7 @@ app.include_router(transactions.router, prefix=f"{PREFIX}/transactions", tags=["
 app.include_router(categories.router,   prefix=f"{PREFIX}/categories",   tags=["categories"])
 app.include_router(rules.router,        prefix=f"{PREFIX}/rules",        tags=["rules"])
 app.include_router(imports.router,      prefix=f"{PREFIX}/imports",      tags=["imports"])
+app.include_router(presets.router,      prefix=f"{PREFIX}/presets",      tags=["presets"])
 app.include_router(dashboard.router,    prefix=f"{PREFIX}/dashboard",    tags=["dashboard"])
 
 

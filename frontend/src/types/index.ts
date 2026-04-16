@@ -109,6 +109,17 @@ export interface RuleUpdate {
   priority?: number;
 }
 
+// ── CSV Presets ───────────────────────────────────────────────────────────────
+
+export interface ImportPreset {
+  id: number;
+  name: string;
+  /** Profile with description_columns already joined to a comma-separated string */
+  profile: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
 // ── Import Jobs ───────────────────────────────────────────────────────────────
 
 export type ImportJobStatus = "pending" | "processing" | "completed" | "failed";

@@ -46,3 +46,25 @@ class ImportJobResponse(BaseModel):
     completed_at: datetime | None
 
     model_config = {"from_attributes": True}
+
+
+# ── CSV Presets ───────────────────────────────────────────────────────────────
+
+class CSVPresetCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    profile: CSVProfile
+
+
+class CSVPresetUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=100)
+    profile: CSVProfile | None = None
+
+
+class CSVPresetResponse(BaseModel):
+    id: int
+    name: str
+    profile: dict[str, Any]
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
