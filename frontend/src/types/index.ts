@@ -116,6 +116,7 @@ export interface ImportPreset {
   name: string;
   /** Profile with description_columns already joined to a comma-separated string */
   profile: Record<string, unknown>;
+  is_default: boolean;
   created_at: string;
   updated_at: string;
 }

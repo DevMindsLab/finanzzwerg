@@ -33,13 +33,16 @@ function toFrontendOpts(profile: Record<string, unknown>): UploadOptions {
   };
 }
 
-function normalise(raw: {
+type RawPreset = {
   id: number;
   name: string;
   profile: Record<string, unknown>;
+  is_default: boolean;
   created_at: string;
   updated_at: string;
-}): ResolvedPreset {
+};
+
+function normalise(raw: RawPreset): ResolvedPreset {
   return { ...raw, profile: toFrontendOpts(raw.profile) };
 }
 
@@ -47,24 +50,29 @@ function normalise(raw: {
 
 export const presetsApi = {
   list: async (): Promise<ResolvedPreset[]> => {
-    const { data } = await client.get<
-      { id: number; name: string; profile: Record<string, unknown>; created_at: string; updated_at: string }[]
-    >("/presets/");
+    const { data } = await client.get<RawPreset[]>("/presets/");
     return data.map(normalise);
   },
 
   create: async (name: string, opts: UploadOptions): Promise<ResolvedPreset> => {
-    const { data } = await client.post<{
-      id: number; name: string; profile: Record<string, unknown>; created_at: string; updated_at: string;
-    }>("/presets/", { name, profile: toBackendProfile(opts) });
+    const { data } = await client.post<RawPreset>("/presets/", { name, profile: toBackendProfile(opts) });
     return normalise(data);
   },
 
   update: async (id: number, name: string, opts: UploadOptions): Promise<ResolvedPreset> => {
-    const { data } = await client.put<{
-      id: number; name: string; profile: Record<string, unknown>; created_at: string; updated_at: string;
-    }>(`/presets/${id}`, { name, profile: toBackendProfile(opts) });
+    const { data } = await client.put<RawPreset>(`/presets/${id}`, { name, profile: toBackendProfile(opts) });
     return normalise(data);
+  },
+
+  setDefault: async (id: number): Promise<ResolvedPreset> => {
+    const { data } = await client.post<{
+      id: number; name: string; profile: Record<string, unknown>; is_default: boolean; created_at: string; updated_at: string;
+    }>(`/presets/${id}/set-default`);
+    return normalise(data);
+  },
+
+  clearDefault: async (): Promise<void> => {
+    await client.delete("/presets/default");
   },
 
   delete: async (id: number): Promise<void> => {

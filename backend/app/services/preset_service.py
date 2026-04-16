@@ -33,6 +33,23 @@ class PresetService:
         db.refresh(preset)
         return preset
 
+    def set_default(self, db: Session, preset: CSVPreset) -> CSVPreset:
+        """Mark preset as default, clearing any existing default first."""
+        db.query(CSVPreset).filter(CSVPreset.is_default == True).update(  # noqa: E712
+            {"is_default": False}
+        )
+        preset.is_default = True
+        db.commit()
+        db.refresh(preset)
+        return preset
+
+    def clear_default(self, db: Session) -> None:
+        """Remove the default flag from all presets."""
+        db.query(CSVPreset).filter(CSVPreset.is_default == True).update(  # noqa: E712
+            {"is_default": False}
+        )
+        db.commit()
+
     def delete(self, db: Session, preset: CSVPreset) -> None:
         db.delete(preset)
         db.commit()

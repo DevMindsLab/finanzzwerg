@@ -16,6 +16,7 @@ import {
   HelpCircle,
   X,
   BookOpen,
+  Star,
 } from "lucide-react";
 import { importsApi, type UploadOptions } from "@/api/imports";
 import { presetsApi, type ResolvedPreset } from "@/api/presets";
@@ -312,6 +313,20 @@ export default function ImportPage() {
 
   // ── Effects ─────────────────────────────────────────────────────────────────
 
+  // Auto-apply default preset once presets load (only on first load)
+  const [defaultApplied, setDefaultApplied] = useState(false);
+  useEffect(() => {
+    if (defaultApplied || presets.length === 0) return;
+    const def = presets.find((p) => p.is_default);
+    if (def) {
+      setOpts((o) => ({ ...o, ...def.profile }));
+      setDefaultApplied(true);
+      toast(t("import.preset_default_applied", { name: def.name }), { icon: "⭐" });
+    } else {
+      setDefaultApplied(true); // no default → don't try again
+    }
+  }, [presets, defaultApplied, t]);
+
   useEffect(() => {
     if (!pendingJobId) return;
     const job = jobs.find((j) => j.id === pendingJobId);
@@ -384,6 +399,18 @@ export default function ImportPage() {
     onError: (err: Error) => toast.error(err.message),
   });
 
+  const setDefaultMutation = useMutation({
+    mutationFn: (id: number) => presetsApi.setDefault(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["presets"] }),
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const clearDefaultMutation = useMutation({
+    mutationFn: () => presetsApi.clearDefault(),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["presets"] }),
+    onError: (err: Error) => toast.error(err.message),
+  });
+
   // ── Handlers ─────────────────────────────────────────────────────────────────
 
   const handleFile = (file: File | null) => {
@@ -418,6 +445,14 @@ export default function ImportPage() {
   const handleDeletePreset = (preset: ResolvedPreset) => {
     if (confirm(t("import.preset_delete_confirm", { name: preset.name }))) {
       deletePresetMutation.mutate(preset.id);
+    }
+  };
+
+  const handleToggleDefault = (preset: ResolvedPreset) => {
+    if (preset.is_default) {
+      clearDefaultMutation.mutate();
+    } else {
+      setDefaultMutation.mutate(preset.id);
     }
   };
 
@@ -553,14 +588,35 @@ export default function ImportPage() {
             {presets.map((preset) => (
               <div
                 key={preset.id}
-                className="group flex items-center gap-0.5 rounded-lg border border-slate-200 bg-white overflow-hidden"
+                className={`group flex items-center gap-0.5 rounded-lg border bg-white overflow-hidden transition-colors ${
+                  preset.is_default
+                    ? "border-brand-300 ring-1 ring-brand-200"
+                    : "border-slate-200"
+                }`}
               >
                 {/* Apply button */}
                 <button
                   onClick={() => applyPreset(preset)}
-                  className="px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors"
                 >
+                  {preset.is_default && (
+                    <Star className="w-3 h-3 fill-amber-400 text-amber-400 shrink-0" />
+                  )}
                   {preset.name}
+                </button>
+
+                {/* Set / clear default (star) */}
+                <button
+                  onClick={() => handleToggleDefault(preset)}
+                  disabled={setDefaultMutation.isPending || clearDefaultMutation.isPending}
+                  className={`px-1.5 py-1.5 transition-all disabled:opacity-30 ${
+                    preset.is_default
+                      ? "text-amber-400 hover:text-slate-400 hover:bg-slate-50"
+                      : "text-slate-300 hover:text-amber-400 hover:bg-amber-50 opacity-0 group-hover:opacity-100"
+                  }`}
+                  title={preset.is_default ? t("import.preset_clear_default") : t("import.preset_set_default")}
+                >
+                  <Star className={`w-3 h-3 ${preset.is_default ? "fill-amber-400" : ""}`} />
                 </button>
 
                 {/* Edit */}

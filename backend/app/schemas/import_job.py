@@ -64,6 +64,7 @@ class CSVPresetResponse(BaseModel):
     id: int
     name: str
     profile: dict[str, Any]
+    is_default: bool
     created_at: datetime
     updated_at: datetime
 

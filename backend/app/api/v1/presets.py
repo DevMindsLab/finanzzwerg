@@ -38,6 +38,21 @@ def update_preset(preset_id: int, data: CSVPresetUpdate, db: Session = DB):
     return preset_service.update(db, preset, data)
 
 
+@router.post("/{preset_id}/set-default", response_model=CSVPresetResponse)
+def set_default_preset(preset_id: int, db: Session = DB):
+    """Mark this preset as the default (auto-applied on the Import page)."""
+    preset = preset_service.get_by_id(db, preset_id)
+    if not preset:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Preset not found.")
+    return preset_service.set_default(db, preset)
+
+
+@router.delete("/default", status_code=status.HTTP_204_NO_CONTENT)
+def clear_default_preset(db: Session = DB):
+    """Remove the default flag from all presets."""
+    preset_service.clear_default(db)
+
+
 @router.delete("/{preset_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_preset(preset_id: int, db: Session = DB):
     preset = preset_service.get_by_id(db, preset_id)
