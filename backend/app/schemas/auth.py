@@ -12,7 +12,7 @@ class UserLogin(BaseModel):
 
 
 class UserProfileUpdate(BaseModel):
-    email: EmailStr | None = None
+    email: str | None = None
     current_password: str | None = None
     new_password: str | None = Field(None, min_length=8)
 

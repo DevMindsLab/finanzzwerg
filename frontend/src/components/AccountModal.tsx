@@ -68,7 +68,7 @@ export default function AccountModal({ open, onClose }: Props) {
         {/* Email */}
         <Input
           label={t("auth.email")}
-          type="email"
+          type="text"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           autoComplete="email"
