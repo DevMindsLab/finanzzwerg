@@ -7,14 +7,12 @@ Create Date: 2026-04-16
 
 from alembic import op
 import sqlalchemy as sa
-from passlib.context import CryptContext
+import bcrypt as _bcrypt_lib
 
 revision = "005"
 down_revision = "004"
 branch_labels = None
 depends_on = None
-
-_pwd = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def upgrade() -> None:
@@ -36,7 +34,7 @@ def upgrade() -> None:
     # ── 2. Seed a migration user so existing data is preserved ────────────────
     # Credentials: admin@localhost / changeme123
     # Users should change these immediately after upgrading.
-    migration_hash = _pwd.hash("changeme123")
+    migration_hash = _bcrypt_lib.hashpw(b"changeme123", _bcrypt_lib.gensalt(rounds=12)).decode()
     op.execute(
         sa.text(
             "INSERT INTO users (email, password_hash, is_active) "
