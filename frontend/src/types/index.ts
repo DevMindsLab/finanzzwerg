@@ -109,6 +109,29 @@ export interface RuleUpdate {
   priority?: number;
 }
 
+// ── Budgets ───────────────────────────────────────────────────────────────────
+
+export interface Budget {
+  id: number;
+  category_id: number;
+  category: Category;
+  amount: string;       // Decimal serialised as string
+  spent: string;
+  remaining: string;
+  percentage: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BudgetCreate {
+  category_id: number;
+  amount: number;
+}
+
+export interface BudgetUpdate {
+  amount: number;
+}
+
 // ── CSV Presets ───────────────────────────────────────────────────────────────
 
 export interface ImportPreset {

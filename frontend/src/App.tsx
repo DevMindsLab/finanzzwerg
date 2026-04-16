@@ -3,6 +3,7 @@ import Layout from "@/components/layout/Layout";
 import DashboardPage from "@/pages/DashboardPage";
 import InboxPage from "@/pages/InboxPage";
 import TransactionsPage from "@/pages/TransactionsPage";
+import BudgetPage from "@/pages/BudgetPage";
 import RulesPage from "@/pages/RulesPage";
 import CategoriesPage from "@/pages/CategoriesPage";
 import ImportPage from "@/pages/ImportPage";
@@ -16,6 +17,7 @@ export default function App() {
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="inbox" element={<InboxPage />} />
           <Route path="transactions" element={<TransactionsPage />} />
+          <Route path="budget" element={<BudgetPage />} />
           <Route path="rules" element={<RulesPage />} />
           <Route path="categories" element={<CategoriesPage />} />
           <Route path="import" element={<ImportPage />} />
