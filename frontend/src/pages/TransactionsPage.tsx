@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Search, SlidersHorizontal, X } from "lucide-react";
@@ -35,11 +36,23 @@ function countActiveFilters(f: Filters) {
 
 export default function TransactionsPage() {
   const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
+
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
-  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState<Filters>(() => ({
+    status:           searchParams.get("status")           ?? "",
+    transaction_type: searchParams.get("transaction_type") ?? "",
+    category_id:      searchParams.get("category_id")      ?? "",
+    date_from:        searchParams.get("date_from")         ?? "",
+    date_to:          searchParams.get("date_to")           ?? "",
+    amount_min:       searchParams.get("amount_min")        ?? "",
+    amount_max:       searchParams.get("amount_max")        ?? "",
+  }));
+  const [showFilters, setShowFilters] = useState(
+    () => [...searchParams.keys()].some((k) => k in EMPTY_FILTERS),
+  );
 
   const handleSearchChange = (value: string) => {
     setSearch(value);

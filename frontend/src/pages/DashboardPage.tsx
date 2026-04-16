@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
@@ -44,9 +45,22 @@ function StatCard({
 
 export default function DashboardPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth() + 1);
+
+  const handleCategoryClick = (categoryId: number | null) => {
+    const mm = String(month).padStart(2, "0");
+    const lastDay = new Date(year, month, 0).getDate();
+    const params = new URLSearchParams({
+      date_from: `${year}-${mm}-01`,
+      date_to: `${year}-${mm}-${String(lastDay).padStart(2, "0")}`,
+      transaction_type: "expense",
+    });
+    if (categoryId !== null) params.set("category_id", String(categoryId));
+    navigate(`/transactions?${params.toString()}`);
+  };
 
   const months: string[] = t("dashboard.months", { returnObjects: true }) as string[];
 
@@ -231,14 +245,18 @@ export default function DashboardPage() {
             </thead>
             <tbody>
               {expense_breakdown.map((row) => (
-                <tr key={row.category_id ?? "uncategorized"} className="border-b border-slate-50 last:border-0 hover:bg-slate-50">
+                <tr
+                  key={row.category_id ?? "uncategorized"}
+                  onClick={() => handleCategoryClick(row.category_id)}
+                  className="border-b border-slate-50 last:border-0 hover:bg-slate-50 cursor-pointer"
+                >
                   <td className="px-6 py-3">
                     <div className="flex items-center gap-2">
                       <span
                         className="w-2.5 h-2.5 rounded-full shrink-0"
                         style={{ backgroundColor: row.category_color }}
                       />
-                      <span className="font-medium text-slate-800">{row.category_name}</span>
+                      <span className="font-medium text-slate-800 group-hover:text-brand-600">{row.category_name}</span>
                     </div>
                   </td>
                   <td className="px-6 py-3 text-right text-slate-600">{row.transaction_count}</td>
