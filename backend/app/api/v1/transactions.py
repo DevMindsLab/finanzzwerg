@@ -1,4 +1,5 @@
 from datetime import date
+from decimal import Decimal
 
 from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy.orm import Session
@@ -28,6 +29,8 @@ def list_transactions(
     search: str | None = Query(default=None, max_length=200),
     date_from: date | None = None,
     date_to: date | None = None,
+    amount_min: Decimal | None = None,
+    amount_max: Decimal | None = None,
     db: Session = DB,
 ):
     return transaction_service.get_list(
@@ -39,6 +42,8 @@ def list_transactions(
         search=search,
         date_from=date_from,
         date_to=date_to,
+        amount_min=amount_min,
+        amount_max=amount_max,
     )
 
 
@@ -47,6 +52,10 @@ def get_inbox(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=50, ge=1, le=200),
     search: str | None = Query(default=None, max_length=200),
+    date_from: date | None = None,
+    date_to: date | None = None,
+    amount_min: Decimal | None = None,
+    amount_max: Decimal | None = None,
     db: Session = DB,
 ):
     """Return only uncategorized transactions — the Inbox view."""
@@ -56,6 +65,10 @@ def get_inbox(
         page_size=page_size,
         status=TransactionStatus.UNCATEGORIZED,
         search=search,
+        date_from=date_from,
+        date_to=date_to,
+        amount_min=amount_min,
+        amount_max=amount_max,
     )
 
 

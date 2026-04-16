@@ -31,6 +31,8 @@ class TransactionService:
         search: str | None = None,
         date_from: date | None = None,
         date_to: date | None = None,
+        amount_min: Decimal | None = None,
+        amount_max: Decimal | None = None,
     ) -> TransactionListResponse:
         q = db.query(Transaction).options(joinedload(Transaction.category))
 
@@ -44,6 +46,10 @@ class TransactionService:
             q = q.filter(Transaction.date >= date_from)
         if date_to:
             q = q.filter(Transaction.date <= date_to)
+        if amount_min is not None:
+            q = q.filter(Transaction.amount >= amount_min)
+        if amount_max is not None:
+            q = q.filter(Transaction.amount <= amount_max)
 
         total = q.count()
         items = (

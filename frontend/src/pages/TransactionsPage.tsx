@@ -1,22 +1,43 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { Search, SlidersHorizontal, X } from "lucide-react";
 import { transactionsApi } from "@/api/transactions";
 import { categoriesApi } from "@/api/categories";
 import type { TransactionStatus } from "@/types";
 import { formatCurrency, formatDate, amountColor } from "@/lib/utils";
 import Badge from "@/components/ui/Badge";
-import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
+
+interface Filters {
+  status: string;
+  category_id: string;
+  date_from: string;
+  date_to: string;
+  amount_min: string;
+  amount_max: string;
+}
+
+const EMPTY_FILTERS: Filters = {
+  status: "",
+  category_id: "",
+  date_from: "",
+  date_to: "",
+  amount_min: "",
+  amount_max: "",
+};
+
+function countActiveFilters(f: Filters) {
+  return Object.values(f).filter(Boolean).length;
+}
 
 export default function TransactionsPage() {
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("");
-  const [categoryFilter, setCategoryFilter] = useState<string>("");
+  const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
+  const [showFilters, setShowFilters] = useState(false);
 
   const handleSearchChange = (value: string) => {
     setSearch(value);
@@ -27,15 +48,21 @@ export default function TransactionsPage() {
     }, 350);
   };
 
+  const activeCount = countActiveFilters(filters);
+
   const { data, isLoading } = useQuery({
-    queryKey: ["transactions", page, debouncedSearch, statusFilter, categoryFilter],
+    queryKey: ["transactions", page, debouncedSearch, filters],
     queryFn: () =>
       transactionsApi.list({
         page,
         page_size: 50,
-        search: debouncedSearch || undefined,
-        status: (statusFilter as TransactionStatus) || undefined,
-        category_id: categoryFilter ? parseInt(categoryFilter) : undefined,
+        ...(debouncedSearch ? { search: debouncedSearch } : {}),
+        ...(filters.status ? { status: filters.status as TransactionStatus } : {}),
+        ...(filters.category_id ? { category_id: parseInt(filters.category_id) } : {}),
+        ...(filters.date_from ? { date_from: filters.date_from } : {}),
+        ...(filters.date_to ? { date_to: filters.date_to } : {}),
+        ...(filters.amount_min ? { amount_min: parseFloat(filters.amount_min) } : {}),
+        ...(filters.amount_max ? { amount_max: parseFloat(filters.amount_max) } : {}),
       }),
     placeholderData: (prev) => prev,
   });
@@ -49,67 +76,178 @@ export default function TransactionsPage() {
   const total = data?.total ?? 0;
   const pages = data?.pages ?? 1;
 
+  const setFilter = (k: keyof Filters) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setFilters((f) => ({ ...f, [k]: e.target.value }));
+    setPage(1);
+  };
+
+  const clearFilters = () => {
+    setFilters(EMPTY_FILTERS);
+    setPage(1);
+  };
+
   const STATUS_LABELS: Record<TransactionStatus, string> = {
     uncategorized: t("transactions.status_uncategorized"),
-    categorized: t("transactions.status_categorized"),
-    ignored: t("transactions.status_ignored"),
+    categorized:   t("transactions.status_categorized"),
+    ignored:       t("transactions.status_ignored"),
   };
 
   const STATUS_BADGE_VARIANT: Record<TransactionStatus, "warning" | "success" | "default"> = {
     uncategorized: "warning",
-    categorized: "success",
-    ignored: "default",
+    categorized:   "success",
+    ignored:       "default",
   };
 
   const statusOptions = [
-    { value: "", label: t("transactions.all_statuses") },
     { value: "uncategorized", label: t("transactions.status_uncategorized") },
-    { value: "categorized", label: t("transactions.status_categorized") },
-    { value: "ignored", label: t("transactions.status_ignored") },
+    { value: "categorized",   label: t("transactions.status_categorized") },
+    { value: "ignored",       label: t("transactions.status_ignored") },
   ];
 
-  const categoryOptions = [
-    { value: "", label: t("transactions.all_categories") },
-    ...categories.map((c) => ({ value: c.id, label: c.name })),
-  ];
+  const categoryOptions = categories.map((c) => ({ value: c.id, label: c.name }));
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex items-center justify-between gap-4">
+        <div className="shrink-0">
           <h1 className="text-2xl font-bold text-slate-900">{t("transactions.title")}</h1>
           <p className="text-sm text-slate-500 mt-0.5">
             {t("transactions.subtitle", { count: total })}
           </p>
         </div>
-      </div>
 
-      {/* Filters */}
-      <div className="card p-4 flex flex-wrap gap-3 items-end">
-        <div className="flex-1 min-w-48">
-          <Input
+        {/* Search */}
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+          <input
+            type="search"
             placeholder={t("transactions.search_placeholder")}
             value={search}
             onChange={(e) => handleSearchChange(e.target.value)}
-            prefix={<Search className="w-4 h-4" />}
+            className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-300 bg-white text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
           />
         </div>
-        <div className="w-48">
-          <Select
-            options={statusOptions}
-            value={statusFilter}
-            onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-          />
-        </div>
-        <div className="w-48">
-          <Select
-            options={categoryOptions}
-            value={categoryFilter}
-            onChange={(e) => { setCategoryFilter(e.target.value); setPage(1); }}
-          />
-        </div>
+
+        {/* Filter toggle */}
+        <button
+          onClick={() => setShowFilters((v) => !v)}
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
+            showFilters || activeCount > 0
+              ? "border-brand-400 bg-brand-50 text-brand-700"
+              : "border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
+          }`}
+        >
+          <SlidersHorizontal className="w-4 h-4" />
+          {t("filters.title")}
+          {activeCount > 0 && (
+            <span className="bg-brand-600 text-white text-xs font-semibold rounded-full w-5 h-5 flex items-center justify-center">
+              {activeCount}
+            </span>
+          )}
+        </button>
       </div>
+
+      {/* Filter panel */}
+      {showFilters && (
+        <div className="card p-4 space-y-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            {/* Status */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+                {t("transactions.col_status")}
+              </label>
+              <Select
+                options={statusOptions}
+                placeholder={t("transactions.all_statuses")}
+                value={filters.status}
+                onChange={setFilter("status")}
+              />
+            </div>
+
+            {/* Category */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+                {t("filters.category")}
+              </label>
+              <Select
+                options={categoryOptions}
+                placeholder={t("filters.all_categories")}
+                value={filters.category_id}
+                onChange={setFilter("category_id")}
+              />
+            </div>
+
+            {/* Date from */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+                {t("filters.date_from")}
+              </label>
+              <input
+                type="date"
+                value={filters.date_from}
+                onChange={setFilter("date_from")}
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
+              />
+            </div>
+
+            {/* Date to */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+                {t("filters.date_to")}
+              </label>
+              <input
+                type="date"
+                value={filters.date_to}
+                onChange={setFilter("date_to")}
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
+              />
+            </div>
+
+            {/* Amount min */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+                {t("filters.amount_min")}
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                placeholder="−"
+                value={filters.amount_min}
+                onChange={setFilter("amount_min")}
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
+              />
+            </div>
+
+            {/* Amount max */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+                {t("filters.amount_max")}
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                placeholder="+"
+                value={filters.amount_max}
+                onChange={setFilter("amount_max")}
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
+              />
+            </div>
+          </div>
+
+          {activeCount > 0 && (
+            <div className="flex justify-end">
+              <button
+                onClick={clearFilters}
+                className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-rose-600 transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+                {t("filters.clear")}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Table */}
       <div className="card overflow-hidden">
@@ -136,19 +274,14 @@ export default function TransactionsPage() {
             <tbody>
               {transactions.map((txn) => (
                 <tr key={txn.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors">
-                  <td className="px-6 py-3 text-slate-600 whitespace-nowrap">
-                    {formatDate(txn.date)}
-                  </td>
+                  <td className="px-6 py-3 text-slate-600 whitespace-nowrap">{formatDate(txn.date)}</td>
                   <td className="px-6 py-3 text-slate-800 max-w-xs truncate" title={txn.description}>
                     {txn.description}
                   </td>
                   <td className="px-6 py-3">
                     {txn.category ? (
                       <span className="inline-flex items-center gap-1.5">
-                        <span
-                          className="w-2 h-2 rounded-full shrink-0"
-                          style={{ backgroundColor: txn.category.color }}
-                        />
+                        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: txn.category.color }} />
                         <span className="text-slate-700">{txn.category.name}</span>
                       </span>
                     ) : (

@@ -69,6 +69,8 @@ export interface TransactionFilters {
   search?: string;
   date_from?: string;
   date_to?: string;
+  amount_min?: number;
+  amount_max?: number;
 }
 
 // ── Rules ─────────────────────────────────────────────────────────────────────

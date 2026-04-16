@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
-import { CheckSquare, Search, Zap } from "lucide-react";
+import { CheckSquare, Search, SlidersHorizontal, X, Zap } from "lucide-react";
 import { transactionsApi } from "@/api/transactions";
 import { rulesApi } from "@/api/rules";
 import { categoriesApi } from "@/api/categories";
@@ -23,16 +23,36 @@ interface RuleSuggestion {
   categoryId: number;
 }
 
+interface Filters {
+  category_id: string;
+  date_from: string;
+  date_to: string;
+  amount_min: string;
+  amount_max: string;
+}
+
+const EMPTY_FILTERS: Filters = {
+  category_id: "",
+  date_from: "",
+  date_to: "",
+  amount_min: "",
+  amount_max: "",
+};
+
+function countActiveFilters(f: Filters) {
+  return Object.values(f).filter(Boolean).length;
+}
+
 function CategoryDropdown({
   transaction,
   categories,
-  onCategorize,
   placeholder,
+  onCategorize,
 }: {
   transaction: Transaction;
   categories: Category[];
-  onCategorize: (txnId: number, categoryId: number) => void;
   placeholder: string;
+  onCategorize: (txnId: number, categoryId: number) => void;
 }) {
   return (
     <select
@@ -42,13 +62,9 @@ function CategoryDropdown({
       }}
       className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
     >
-      <option value="" disabled>
-        {placeholder}
-      </option>
+      <option value="" disabled>{placeholder}</option>
       {categories.map((cat) => (
-        <option key={cat.id} value={cat.id}>
-          {cat.name}
-        </option>
+        <option key={cat.id} value={cat.id}>{cat.name}</option>
       ))}
     </select>
   );
@@ -57,9 +73,13 @@ function CategoryDropdown({
 export default function InboxPage() {
   const { t } = useTranslation();
   const qc = useQueryClient();
+
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
+  const [showFilters, setShowFilters] = useState(false);
+
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [bulkCategory, setBulkCategory] = useState<string>("");
   const [ruleSuggestion, setRuleSuggestion] = useState<RuleSuggestion | null>(null);
@@ -73,9 +93,22 @@ export default function InboxPage() {
     return () => clearTimeout(timer);
   }, [search]);
 
+  const activeCount = countActiveFilters(filters);
+
+  const queryParams = {
+    page,
+    page_size: 50,
+    ...(debouncedSearch ? { search: debouncedSearch } : {}),
+    ...(filters.category_id ? { category_id: parseInt(filters.category_id) } : {}),
+    ...(filters.date_from ? { date_from: filters.date_from } : {}),
+    ...(filters.date_to ? { date_to: filters.date_to } : {}),
+    ...(filters.amount_min ? { amount_min: parseFloat(filters.amount_min) } : {}),
+    ...(filters.amount_max ? { amount_max: parseFloat(filters.amount_max) } : {}),
+  };
+
   const { data, isLoading } = useQuery({
-    queryKey: ["inbox", page, debouncedSearch],
-    queryFn: () => transactionsApi.inbox(page, 50, debouncedSearch || undefined),
+    queryKey: ["inbox", queryParams],
+    queryFn: () => transactionsApi.inbox(queryParams),
     placeholderData: (prev) => prev,
   });
 
@@ -154,6 +187,16 @@ export default function InboxPage() {
     }
   };
 
+  const setFilter = (k: keyof Filters) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setFilters((f) => ({ ...f, [k]: e.target.value }));
+    setPage(1);
+  };
+
+  const clearFilters = () => {
+    setFilters(EMPTY_FILTERS);
+    setPage(1);
+  };
+
   const transactions: Transaction[] = data?.items ?? [];
   const total = data?.total ?? 0;
   const pages = data?.pages ?? 1;
@@ -180,6 +223,22 @@ export default function InboxPage() {
             className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-300 bg-white text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
           />
         </div>
+        <button
+          onClick={() => setShowFilters((v) => !v)}
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
+            showFilters || activeCount > 0
+              ? "border-brand-400 bg-brand-50 text-brand-700"
+              : "border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
+          }`}
+        >
+          <SlidersHorizontal className="w-4 h-4" />
+          {t("filters.title")}
+          {activeCount > 0 && (
+            <span className="bg-brand-600 text-white text-xs font-semibold rounded-full w-5 h-5 flex items-center justify-center">
+              {activeCount}
+            </span>
+          )}
+        </button>
         <Button
           variant="secondary"
           icon={<Zap className="w-4 h-4" />}
@@ -189,6 +248,94 @@ export default function InboxPage() {
           {t("inbox.apply_rules")}
         </Button>
       </div>
+
+      {/* Filter panel */}
+      {showFilters && (
+        <div className="card p-4 space-y-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+            {/* Category */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+                {t("filters.category")}
+              </label>
+              <Select
+                options={categoryOptions}
+                placeholder={t("filters.all_categories")}
+                value={filters.category_id}
+                onChange={setFilter("category_id")}
+              />
+            </div>
+
+            {/* Date from */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+                {t("filters.date_from")}
+              </label>
+              <input
+                type="date"
+                value={filters.date_from}
+                onChange={setFilter("date_from")}
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
+              />
+            </div>
+
+            {/* Date to */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+                {t("filters.date_to")}
+              </label>
+              <input
+                type="date"
+                value={filters.date_to}
+                onChange={setFilter("date_to")}
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
+              />
+            </div>
+
+            {/* Amount min */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+                {t("filters.amount_min")}
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                placeholder="−"
+                value={filters.amount_min}
+                onChange={setFilter("amount_min")}
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
+              />
+            </div>
+
+            {/* Amount max */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+                {t("filters.amount_max")}
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                placeholder="+"
+                value={filters.amount_max}
+                onChange={setFilter("amount_max")}
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
+              />
+            </div>
+          </div>
+
+          {activeCount > 0 && (
+            <div className="flex justify-end">
+              <button
+                onClick={clearFilters}
+                className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-rose-600 transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+                {t("filters.clear")}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Bulk toolbar */}
       {selected.size > 0 && (
@@ -229,7 +376,7 @@ export default function InboxPage() {
           <div className="flex flex-col items-center justify-center h-48 gap-2 text-slate-400">
             <CheckSquare className="w-10 h-10 opacity-40" />
             <p className="text-sm font-medium">
-              {debouncedSearch
+              {debouncedSearch || activeCount > 0
                 ? t("inbox.no_results", { search: debouncedSearch })
                 : t("inbox.empty")}
             </p>
@@ -268,9 +415,7 @@ export default function InboxPage() {
                       className="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
                     />
                   </td>
-                  <td className="px-3 py-3 text-slate-600 whitespace-nowrap">
-                    {formatDate(txn.date)}
-                  </td>
+                  <td className="px-3 py-3 text-slate-600 whitespace-nowrap">{formatDate(txn.date)}</td>
                   <td className="px-3 py-3 text-slate-800 max-w-sm truncate" title={txn.description}>
                     {txn.description}
                   </td>
@@ -295,23 +440,11 @@ export default function InboxPage() {
       {/* Pagination */}
       {pages > 1 && (
         <div className="flex items-center justify-between">
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={page <= 1}
-            onClick={() => setPage((p) => p - 1)}
-          >
+          <Button variant="secondary" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
             {t("inbox.previous")}
           </Button>
-          <span className="text-sm text-slate-600">
-            {t("inbox.page_of", { page, pages })}
-          </span>
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={page >= pages}
-            onClick={() => setPage((p) => p + 1)}
-          >
+          <span className="text-sm text-slate-600">{t("inbox.page_of", { page, pages })}</span>
+          <Button variant="secondary" size="sm" disabled={page >= pages} onClick={() => setPage((p) => p + 1)}>
             {t("inbox.next")}
           </Button>
         </div>
@@ -325,13 +458,8 @@ export default function InboxPage() {
         size="sm"
         footer={
           <>
-            <Button variant="ghost" onClick={() => setRuleSuggestion(null)}>
-              {t("inbox.skip")}
-            </Button>
-            <Button
-              loading={createRuleMutation.isPending}
-              onClick={() => createRuleMutation.mutate(rulePattern)}
-            >
+            <Button variant="ghost" onClick={() => setRuleSuggestion(null)}>{t("inbox.skip")}</Button>
+            <Button loading={createRuleMutation.isPending} onClick={() => createRuleMutation.mutate(rulePattern)}>
               {t("inbox.create_rule")}
             </Button>
           </>
