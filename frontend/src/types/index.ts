@@ -71,6 +71,7 @@ export interface TransactionFilters {
   date_to?: string;
   amount_min?: number;
   amount_max?: number;
+  transaction_type?: "income" | "expense";
 }
 
 // ── Rules ─────────────────────────────────────────────────────────────────────

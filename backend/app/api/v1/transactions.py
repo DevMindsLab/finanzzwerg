@@ -31,6 +31,7 @@ def list_transactions(
     date_to: date | None = None,
     amount_min: Decimal | None = None,
     amount_max: Decimal | None = None,
+    transaction_type: str | None = Query(default=None, pattern="^(income|expense)$"),
     db: Session = DB,
 ):
     return transaction_service.get_list(
@@ -44,6 +45,7 @@ def list_transactions(
         date_to=date_to,
         amount_min=amount_min,
         amount_max=amount_max,
+        transaction_type=transaction_type,
     )
 
 
@@ -56,6 +58,7 @@ def get_inbox(
     date_to: date | None = None,
     amount_min: Decimal | None = None,
     amount_max: Decimal | None = None,
+    transaction_type: str | None = Query(default=None, pattern="^(income|expense)$"),
     db: Session = DB,
 ):
     """Return only uncategorized transactions — the Inbox view."""
@@ -69,6 +72,7 @@ def get_inbox(
         date_to=date_to,
         amount_min=amount_min,
         amount_max=amount_max,
+        transaction_type=transaction_type,
     )
 
 

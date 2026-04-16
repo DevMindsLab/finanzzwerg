@@ -182,6 +182,10 @@ const resources = {
       },
       filters: {
         title: "Filters",
+        type: "Type",
+        all_types: "All types",
+        income: "Income",
+        expense: "Expenses",
         category: "Category",
         all_categories: "All categories",
         date_from: "From",
@@ -377,6 +381,10 @@ const resources = {
       },
       filters: {
         title: "Filter",
+        type: "Typ",
+        all_types: "Alle Typen",
+        income: "Einnahmen",
+        expense: "Ausgaben",
         category: "Kategorie",
         all_categories: "Alle Kategorien",
         date_from: "Von",

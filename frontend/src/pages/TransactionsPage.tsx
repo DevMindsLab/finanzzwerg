@@ -11,6 +11,7 @@ import Select from "@/components/ui/Select";
 
 interface Filters {
   status: string;
+  transaction_type: string;
   category_id: string;
   date_from: string;
   date_to: string;
@@ -20,6 +21,7 @@ interface Filters {
 
 const EMPTY_FILTERS: Filters = {
   status: "",
+  transaction_type: "",
   category_id: "",
   date_from: "",
   date_to: "",
@@ -58,6 +60,7 @@ export default function TransactionsPage() {
         page_size: 50,
         ...(debouncedSearch ? { search: debouncedSearch } : {}),
         ...(filters.status ? { status: filters.status as TransactionStatus } : {}),
+        ...(filters.transaction_type ? { transaction_type: filters.transaction_type as "income" | "expense" } : {}),
         ...(filters.category_id ? { category_id: parseInt(filters.category_id) } : {}),
         ...(filters.date_from ? { date_from: filters.date_from } : {}),
         ...(filters.date_to ? { date_to: filters.date_to } : {}),
@@ -102,6 +105,11 @@ export default function TransactionsPage() {
     { value: "uncategorized", label: t("transactions.status_uncategorized") },
     { value: "categorized",   label: t("transactions.status_categorized") },
     { value: "ignored",       label: t("transactions.status_ignored") },
+  ];
+
+  const typeOptions = [
+    { value: "income",  label: t("filters.income") },
+    { value: "expense", label: t("filters.expense") },
   ];
 
   const categoryOptions = categories.map((c) => ({ value: c.id, label: c.name }));
@@ -151,7 +159,20 @@ export default function TransactionsPage() {
       {/* Filter panel */}
       {showFilters && (
         <div className="card p-4 space-y-3">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3">
+            {/* Type */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+                {t("filters.type")}
+              </label>
+              <Select
+                options={typeOptions}
+                placeholder={t("filters.all_types")}
+                value={filters.transaction_type}
+                onChange={setFilter("transaction_type")}
+              />
+            </div>
+
             {/* Status */}
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">
