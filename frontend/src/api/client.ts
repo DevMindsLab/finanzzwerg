@@ -34,8 +34,11 @@ client.interceptors.response.use(
         window.location.href = "/login";
       }
     }
+    const detail = err.response?.data?.detail;
     const message: string =
-      err.response?.data?.detail ||
+      (Array.isArray(detail)
+        ? detail.map((e: { msg?: string }) => e.msg ?? String(e)).join(", ")
+        : detail) ||
       err.response?.data?.message ||
       err.message ||
       "An unexpected error occurred";
