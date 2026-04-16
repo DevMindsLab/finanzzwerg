@@ -292,7 +292,7 @@ export default function BudgetPage() {
     else setMonth((m) => m + 1);
   };
 
-  const monthNames: string[] = t("budget.months", { returnObjects: true });
+  const monthNames = t("budget.months", { returnObjects: true }) as string[];
   const usedCategoryIds = new Set(budgets.map((b) => b.category_id));
   const isPending = createMutation.isPending || updateMutation.isPending;
 
