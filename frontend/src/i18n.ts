@@ -88,6 +88,7 @@ const resources = {
         status_uncategorized: "Uncategorized",
         status_categorized: "Categorized",
         status_ignored: "Ignored",
+        change_category: "Change category",
       },
       categories: {
         title: "Categories",
@@ -354,6 +355,7 @@ const resources = {
         status_uncategorized: "Nicht kategorisiert",
         status_categorized: "Kategorisiert",
         status_ignored: "Ignoriert",
+        change_category: "Kategorie ändern",
       },
       categories: {
         title: "Kategorien",

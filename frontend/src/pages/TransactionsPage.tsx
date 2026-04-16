@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Search, SlidersHorizontal, X } from "lucide-react";
+import toast from "react-hot-toast";
+import { Search, SlidersHorizontal, X, Pencil } from "lucide-react";
 import { transactionsApi } from "@/api/transactions";
 import { categoriesApi } from "@/api/categories";
 import type { TransactionStatus } from "@/types";
@@ -36,7 +37,9 @@ function countActiveFilters(f: Filters) {
 
 export default function TransactionsPage() {
   const { t } = useTranslation();
+  const qc = useQueryClient();
   const [searchParams] = useSearchParams();
+  const [editingCategoryId, setEditingCategoryId] = useState<number | null>(null);
 
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -91,6 +94,17 @@ export default function TransactionsPage() {
   const transactions = data?.items ?? [];
   const total = data?.total ?? 0;
   const pages = data?.pages ?? 1;
+
+  const categorizeMutation = useMutation({
+    mutationFn: ({ txnId, categoryId }: { txnId: number; categoryId: number }) =>
+      transactionsApi.categorize(txnId, { category_id: categoryId }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["transactions"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: ["budgets"] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
 
   const setFilter = (k: keyof Filters) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFilters((f) => ({ ...f, [k]: e.target.value }));
@@ -313,13 +327,37 @@ export default function TransactionsPage() {
                     {txn.description}
                   </td>
                   <td className="px-6 py-3">
-                    {txn.category ? (
-                      <span className="inline-flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: txn.category.color }} />
-                        <span className="text-slate-700">{txn.category.name}</span>
-                      </span>
+                    {editingCategoryId === txn.id ? (
+                      <Select
+                        options={categoryOptions}
+                        value={String(txn.category_id ?? "")}
+                        placeholder={t("inbox.select_category")}
+                        autoFocus
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            categorizeMutation.mutate({ txnId: txn.id, categoryId: parseInt(e.target.value) });
+                          }
+                          setEditingCategoryId(null);
+                        }}
+                        onBlur={() => setEditingCategoryId(null)}
+                        className="py-1 text-xs"
+                      />
                     ) : (
-                      <span className="text-slate-400">—</span>
+                      <button
+                        onClick={() => setEditingCategoryId(txn.id)}
+                        className="inline-flex items-center gap-1.5 group/cat text-left"
+                        title={t("transactions.change_category")}
+                      >
+                        {txn.category ? (
+                          <>
+                            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: txn.category.color }} />
+                            <span className="text-slate-700 group-hover/cat:text-brand-600 transition-colors">{txn.category.name}</span>
+                          </>
+                        ) : (
+                          <span className="text-slate-400 group-hover/cat:text-brand-600 transition-colors">—</span>
+                        )}
+                        <Pencil className="w-3 h-3 opacity-0 group-hover/cat:opacity-100 text-brand-400 transition-opacity shrink-0" />
+                      </button>
                     )}
                   </td>
                   <td className="px-6 py-3">
