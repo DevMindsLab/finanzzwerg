@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import BrandIcon from "@/components/ui/BrandIcon";
+import AppFooter from "@/components/ui/AppFooter";
 import { authApi } from "@/api/auth";
 import { useAuth } from "@/contexts/AuthContext";
 import Input from "@/components/ui/Input";
@@ -33,8 +34,8 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-      <div className="w-full max-w-sm">
+    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4">
+      <div className="w-full max-w-sm flex-1 flex flex-col items-center justify-center">
         {/* Logo */}
         <div className="flex items-center justify-center gap-2.5 mb-8">
           <BrandIcon className="w-10 h-10" />
@@ -84,6 +85,7 @@ export default function RegisterPage() {
           </p>
         </div>
       </div>
+      <AppFooter />
     </div>
   );
 }

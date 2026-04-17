@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import { Menu } from "lucide-react";
 import BrandIcon from "@/components/ui/BrandIcon";
+import AppFooter from "@/components/ui/AppFooter";
 import Sidebar from "./Sidebar";
 
 export default function Layout() {
@@ -45,17 +46,7 @@ export default function Layout() {
             <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
               <Outlet />
             </div>
-            <footer className="text-center py-4 text-xs text-slate-400 dark:text-slate-600">
-              Made with <span className="text-rose-400">♥</span> by{" "}
-              <a
-                href="https://rene-baumgarten.de"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-slate-600 dark:hover:text-slate-400 transition-colors"
-              >
-                Rene Baumgarten
-              </a>
-            </footer>
+            <AppFooter />
           </div>
         </main>
       </div>
