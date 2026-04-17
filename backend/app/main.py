@@ -24,7 +24,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Finanzzwerg API",
     description="Self-hosted personal finance management — privacy-first.",
-    version="0.2.0",
+    version="0.3.0",
     lifespan=lifespan,
     docs_url="/api/docs",
     redoc_url="/api/redoc",
@@ -55,4 +55,4 @@ app.include_router(dashboard.router,     prefix=f"{PREFIX}/dashboard",     tags=
 
 @app.get("/health", tags=["meta"])
 def health() -> dict:
-    return {"status": "ok", "version": "0.2.0"}
+    return {"status": "ok", "version": "0.3.0"}

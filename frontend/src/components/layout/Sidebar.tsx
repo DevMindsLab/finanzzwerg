@@ -156,7 +156,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         {/* Version + language + theme toggle */}
         <div className="flex items-center justify-between">
-          <p className="text-slate-600 text-xs">Finanzzwerg v0.2.0</p>
+          <p className="text-slate-600 text-xs">Finanzzwerg v0.3.0</p>
           <div className="flex items-center gap-1.5">
             {/* Dark/light toggle */}
             <button
