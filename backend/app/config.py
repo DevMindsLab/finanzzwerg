@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    DATABASE_URL: str = "postgresql://financeless:financeless@localhost:5432/financeless"
+    DATABASE_URL: str = "postgresql://finanzzwerg:finanzzwerg@localhost:5432/finanzzwerg"
     SECRET_KEY: str = "dev-secret-key-change-in-production"
     CORS_ORIGINS: List[str] = ["http://localhost:5173", "http://localhost:3000"]
     UPLOAD_DIR: str = "/app/uploads"

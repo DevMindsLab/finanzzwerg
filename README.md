@@ -37,9 +37,9 @@
 ### One-command setup
 
 ```bash
-git clone <your-repo-url> financeless
-cd financeless
-bash financeless.sh install
+git clone <your-repo-url> finanzzwerg
+cd finanzzwerg
+bash finanzzwerg.sh install
 ```
 
 The script handles everything:
@@ -54,10 +54,10 @@ Open **http://your-server-ip** when done.
 ### Management commands
 
 ```bash
-bash financeless.sh start      # start stopped containers
-bash financeless.sh stop       # stop running containers
-bash financeless.sh update     # git pull + rebuild
-bash financeless.sh uninstall  # remove containers, volumes, images
+bash finanzzwerg.sh start      # start stopped containers
+bash finanzzwerg.sh stop       # stop running containers
+bash finanzzwerg.sh update     # git pull + rebuild
+bash finanzzwerg.sh uninstall  # remove containers, volumes, images
 ```
 
 ### Ports
@@ -116,8 +116,8 @@ Frontend: http://localhost:5173
 ## Architecture
 
 ```
-financeless/
-├── financeless.sh               # Install / start / stop / update / uninstall
+finanzzwerg/
+├── finanzzwerg.sh               # Install / start / stop / update / uninstall
 ├── docker-compose.yml
 │
 ├── backend/
@@ -206,7 +206,7 @@ When you manually categorize a transaction in the Inbox, Finanzzwerg suggests cr
 
 ## Environment Variables
 
-The `.env` file is generated automatically by `financeless.sh install` with secure random values. You can edit it afterwards:
+The `.env` file is generated automatically by `finanzzwerg.sh install` with secure random values. You can edit it afterwards:
 
 | Variable | Description |
 |---|---|
@@ -216,7 +216,7 @@ The `.env` file is generated automatically by `financeless.sh install` with secu
 | `SECRET_KEY` | App secret — keep this safe |
 | `CORS_ORIGINS` | Allowed frontend origins (JSON array) |
 | `VITE_API_URL` | Backend URL seen by the browser |
-| `GIT_REPO_URL` | Used by `financeless.sh update` for git pull |
+| `GIT_REPO_URL` | Used by `finanzzwerg.sh update` for git pull |
 | `ACCESS_TOKEN_EXPIRE_DAYS` | JWT lifetime in days (default: 30) |
 
 ---
