@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -37,7 +38,8 @@ export default function Modal({ isOpen, onClose, title, children, size = "md", f
 
   if (!isOpen) return null;
 
-  return (
+  // Portal to document.body so CSS transform on sidebar doesn't trap fixed positioning
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       aria-modal="true"
@@ -82,6 +84,7 @@ export default function Modal({ isOpen, onClose, title, children, size = "md", f
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
