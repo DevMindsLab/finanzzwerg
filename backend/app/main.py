@@ -16,13 +16,13 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Starting Financeless API...")
+    logger.info("Starting Finanzzwerg API...")
     yield
-    logger.info("Shutting down Financeless API.")
+    logger.info("Shutting down Finanzzwerg API.")
 
 
 app = FastAPI(
-    title="Financeless API",
+    title="Finanzzwerg API",
     description="Self-hosted personal finance management — privacy-first.",
     version="0.2.0",
     lifespan=lifespan,

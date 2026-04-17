@@ -34,7 +34,7 @@ export default function Layout() {
             <div className="w-7 h-7 rounded-lg bg-brand-600 flex items-center justify-center">
               <BarChart3 className="w-4 h-4 text-white" />
             </div>
-            <span className="text-white font-semibold text-base tracking-tight">Financeless</span>
+            <span className="text-white font-semibold text-base tracking-tight">Finanzzwerg</span>
           </div>
           {/* Spacer to keep logo centred */}
           <div className="w-9" />

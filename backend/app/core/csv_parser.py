@@ -1,5 +1,5 @@
 """
-CSV parsing engine for Financeless.
+CSV parsing engine for Finanzzwerg.
 
 Supports configurable column mappings, date formats, decimal separators,
 split debit/credit columns, and automatic deduplication via SHA-256 hashing.

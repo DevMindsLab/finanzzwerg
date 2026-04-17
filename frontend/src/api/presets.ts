@@ -9,7 +9,7 @@ export type ResolvedPreset = Omit<ImportPreset, "profile"> & { profile: UploadOp
 
 /** Shape of an exported .flpreset.json file */
 interface PresetFilePayload {
-  financeless_preset: string;
+  finanzzwerg_preset: string;
   name: string;
   profile: Record<string, unknown>;
 }
@@ -45,7 +45,7 @@ function toFrontendOpts(profile: Record<string, unknown>): UploadOptions {
 /** Trigger a browser download of the preset as a .flpreset.json file */
 export function exportPreset(preset: ResolvedPreset): void {
   const payload: PresetFilePayload = {
-    financeless_preset: "1.0",
+    finanzzwerg_preset: "1.0",
     name: preset.name,
     profile: toBackendProfile(preset.profile),
   };
@@ -65,7 +65,7 @@ export function parsePresetFile(file: File): Promise<{ name: string; profile: Up
     reader.onload = (e) => {
       try {
         const json = JSON.parse(e.target?.result as string) as PresetFilePayload;
-        if (!json.financeless_preset || !json.name || typeof json.profile !== "object") {
+        if (!json.finanzzwerg_preset || !json.name || typeof json.profile !== "object") {
           reject(new Error("invalid"));
           return;
         }

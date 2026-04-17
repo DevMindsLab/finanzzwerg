@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-#  Financeless — Management script
+#  Finanzzwerg — Management script
 #  Usage: ./financeless.sh [install|start|stop|update|uninstall]
 #
 #  Supports: Ubuntu · Debian · Linux Mint · Fedora · RHEL/CentOS/Alma/Rocky
@@ -77,7 +77,7 @@ check_prerequisites() {
   fi
 
   [[ -f "$COMPOSE_FILE" ]] \
-    || die "docker-compose.yml not found.\nRun this script from the Financeless project root:\n\n  cd /path/to/financeless && bash financeless.sh"
+    || die "docker-compose.yml not found.\nRun this script from the Finanzzwerg project root:\n\n  cd /path/to/financeless && bash financeless.sh"
 
   if [[ $EUID -eq 0 ]]; then
     SUDO=""
@@ -522,7 +522,7 @@ check_ports() {
 #  SHARED — Build & start containers
 # =============================================================================
 start_services() {
-  section "Building and starting Financeless"
+  section "Building and starting Finanzzwerg"
   cd "$SCRIPT_DIR"
   info "Building images and starting containers (this may take a few minutes on first run)..."
   "${DOCKER_CMD[@]}" -f "$COMPOSE_FILE" up --build -d
@@ -574,7 +574,7 @@ print_summary() {
 
   divider
   echo ""
-  echo -e "  ${GREEN}${BOLD}Financeless is running!${NC}"
+  echo -e "  ${GREEN}${BOLD}Finanzzwerg is running!${NC}"
   echo ""
   echo -e "  ${BOLD}URLs${NC}"
   echo -e "    ${CYAN}Frontend${NC}   →  http://localhost"
@@ -684,12 +684,12 @@ cmd_update() {
 #  COMMAND — uninstall
 # =============================================================================
 cmd_uninstall() {
-  section "Uninstalling Financeless"
+  section "Uninstalling Finanzzwerg"
 
   echo ""
   echo -e "  ${RED}${BOLD}WARNING — The following will be permanently deleted:${NC}"
   echo ""
-  echo -e "    • All Financeless containers"
+  echo -e "    • All Finanzzwerg containers"
   echo -e "    • All data volumes (database, uploads) — ${BOLD}your data will be lost${NC}"
   echo -e "    • Docker images for this project"
   echo -e "    • The .env configuration file"
@@ -798,7 +798,7 @@ cmd_uninstall() {
   # ── 5. Summary ───────────────────────────────────────────────────────────────
   divider
   echo ""
-  echo -e "  ${GREEN}${BOLD}Financeless has been uninstalled.${NC}"
+  echo -e "  ${GREEN}${BOLD}Finanzzwerg has been uninstalled.${NC}"
   echo ""
   echo -e "  The project files in ${BOLD}${SCRIPT_DIR}${NC} were left intact."
   echo -e "  To remove them as well:"
@@ -832,7 +832,7 @@ case "$COMMAND" in
   start)
     check_prerequisites
     load_docker_cmd
-    section "Starting Financeless"
+    section "Starting Finanzzwerg"
     cd "$SCRIPT_DIR"
     info "Starting containers..."
     "${DOCKER_CMD[@]}" -f "$COMPOSE_FILE" up -d
@@ -845,13 +845,13 @@ case "$COMMAND" in
   stop)
     check_prerequisites
     load_docker_cmd
-    section "Stopping Financeless"
+    section "Stopping Finanzzwerg"
     cd "$SCRIPT_DIR"
     info "Stopping containers..."
     "${DOCKER_CMD[@]}" -f "$COMPOSE_FILE" down
     divider
     echo ""
-    echo -e "  ${GREEN}${BOLD}Financeless stopped.${NC}"
+    echo -e "  ${GREEN}${BOLD}Finanzzwerg stopped.${NC}"
     echo ""
     echo -e "  Restart:        ${BOLD}./financeless.sh start${NC}"
     echo -e "  Wipe all data:  ${BOLD}${DOCKER_CMD[*]} -f ${COMPOSE_FILE} down -v${NC}"

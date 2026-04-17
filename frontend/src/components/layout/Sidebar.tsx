@@ -112,7 +112,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             <BarChart3 className="w-4 h-4 text-white" />
           </div>
           <span className="text-white font-semibold text-lg tracking-tight">
-            Financeless
+            Finanzzwerg
           </span>
         </div>
         {/* Close button — mobile only */}
@@ -157,7 +157,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         {/* Version + language + theme toggle */}
         <div className="flex items-center justify-between">
-          <p className="text-slate-600 text-xs">Financeless v0.2.0</p>
+          <p className="text-slate-600 text-xs">Finanzzwerg v0.2.0</p>
           <div className="flex items-center gap-1.5">
             {/* Dark/light toggle */}
             <button

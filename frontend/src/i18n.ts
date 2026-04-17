@@ -272,7 +272,7 @@ const resources = {
         months: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
       },
       auth: {
-        login_title: "Sign in to Financeless",
+        login_title: "Sign in to Finanzzwerg",
         register_title: "Create your account",
         email: "Email address",
         password: "Password",
@@ -578,7 +578,7 @@ const resources = {
         months: ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"],
       },
       auth: {
-        login_title: "Bei Financeless anmelden",
+        login_title: "Bei Finanzzwerg anmelden",
         register_title: "Konto erstellen",
         email: "E-Mail-Adresse",
         password: "Passwort",

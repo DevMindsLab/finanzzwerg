@@ -1,4 +1,4 @@
-# Financeless
+# Finanzzwerg
 
 > Self-hosted, privacy-first personal finance management — inspired by Paperless-ngx.
 
@@ -168,7 +168,7 @@ financeless/
 
 ## CSV Import
 
-Financeless supports any bank CSV export via a configurable profile:
+Finanzzwerg supports any bank CSV export via a configurable profile:
 
 | Field | Description | Default |
 |---|---|---|
@@ -200,7 +200,7 @@ Rules fire in descending **priority** order. First match wins.
 
 ### Rule Learning
 
-When you manually categorize a transaction in the Inbox, Financeless suggests creating a rule for future imports. You can accept, edit the pattern, or skip.
+When you manually categorize a transaction in the Inbox, Finanzzwerg suggests creating a rule for future imports. You can accept, edit the pattern, or skip.
 
 ---
 
