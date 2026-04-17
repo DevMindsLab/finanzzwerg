@@ -425,10 +425,15 @@ POSTGRES_DB=financeless
 
 # ─── Backend ──────────────────────────────────────────────────────────────────
 SECRET_KEY=${secret_key}
-CORS_ORIGINS=["http://localhost","http://localhost:80","http://localhost:${BACKEND_PORT}"]
+CORS_ORIGINS=["http://localhost","http://localhost:${FRONTEND_PORT}","http://localhost:${BACKEND_PORT}"]
 
 # ─── Frontend ─────────────────────────────────────────────────────────────────
 VITE_API_URL=http://localhost:${BACKEND_PORT}
+
+# ─── Ports ────────────────────────────────────────────────────────────────────
+FRONTEND_PORT=${FRONTEND_PORT}
+BACKEND_PORT=${BACKEND_PORT}
+DB_PORT=${DB_PORT}
 
 # ─── Updates (used by ./financeless.sh update) ────────────────────────────────
 GIT_REPO_URL=${git_url}
@@ -438,27 +443,78 @@ EOF
 }
 
 # =============================================================================
-#  INSTALL — Check ports
+#  INSTALL — Port helpers & availability check
 # =============================================================================
+port_in_use() {
+  local p="$1"
+  ss -tln 2>/dev/null | grep -q ":${p}\b" \
+    || netstat -tln 2>/dev/null | grep -q ":${p} "
+}
+
+# Upsert KEY=VALUE in $ENV_FILE (updates existing line, appends if absent)
+set_env_var() {
+  local key="$1" val="$2"
+  if grep -q "^${key}=" "$ENV_FILE" 2>/dev/null; then
+    sed -i "s|^${key}=.*|${key}=${val}|" "$ENV_FILE"
+  else
+    echo "${key}=${val}" >> "$ENV_FILE"
+  fi
+}
+
 check_ports() {
   section "Checking port availability"
 
-  local ports=("$FRONTEND_PORT" "$BACKEND_PORT" "$DB_PORT")
-  local blocked=()
+  # 1. Load any previously stored ports from .env (overrides script defaults)
+  if [[ -f "$ENV_FILE" ]]; then
+    local v
+    v="$(grep -E '^FRONTEND_PORT=' "$ENV_FILE" 2>/dev/null | cut -d= -f2 | xargs 2>/dev/null || true)"
+    [[ -n "$v" ]] && FRONTEND_PORT="$v"
+    v="$(grep -E '^BACKEND_PORT=' "$ENV_FILE" 2>/dev/null | cut -d= -f2 | xargs 2>/dev/null || true)"
+    [[ -n "$v" ]] && BACKEND_PORT="$v"
+    v="$(grep -E '^DB_PORT=' "$ENV_FILE" 2>/dev/null | cut -d= -f2 | xargs 2>/dev/null || true)"
+    [[ -n "$v" ]] && DB_PORT="$v"
+  fi
 
-  for port in "${ports[@]}"; do
-    if ss -tln 2>/dev/null | grep -q ":${port}\b" \
-        || netstat -tln 2>/dev/null | grep -q ":${port} "; then
-      blocked+=("$port")
+  # 2. Check each port; prompt for a free alternative when occupied
+  local -a service_vars=("FRONTEND_PORT" "BACKEND_PORT" "DB_PORT")
+  local -a service_names=("Frontend (HTTP)" "Backend API" "Database (PostgreSQL)")
+  local changed=false var name port new_port
+
+  for i in "${!service_vars[@]}"; do
+    var="${service_vars[$i]}"
+    name="${service_names[$i]}"
+    port="${!var}"
+
+    if port_in_use "$port"; then
+      warn "Port ${port} (${name}) is already in use."
+      while true; do
+        printf "  New port for %-30s [Enter = keep %s]: " "${name}:" "$port"
+        read -r new_port || new_port=""
+        [[ -z "$new_port" ]] && { new_port="$port"; break; }
+        if [[ "$new_port" =~ ^[0-9]+$ ]] && (( new_port >= 1 && new_port <= 65535 )); then
+          port_in_use "$new_port" \
+            && warn "Port ${new_port} is also occupied — try another." \
+            || break
+        else
+          warn "Invalid port number. Enter a value between 1 and 65535."
+        fi
+      done
+      printf -v "$var" '%s' "$new_port"
+      [[ "$new_port" != "$port" ]] && changed=true
+      ok "Port for ${name}: ${new_port}"
+    else
+      ok "Port ${port} (${name}) is free"
     fi
   done
 
-  if [[ ${#blocked[@]} -gt 0 ]]; then
-    warn "The following ports are already in use: ${blocked[*]}"
-    warn "Another service may conflict. Press Enter to continue anyway, or Ctrl+C to abort."
-    read -r -t 30 || true
-  else
-    ok "Ports ${ports[*]} are free"
+  # 3. If .env already exists, persist any changes (new .env is written by generate_env)
+  if [[ -f "$ENV_FILE" ]] && [[ "$changed" == "true" ]]; then
+    set_env_var "FRONTEND_PORT" "$FRONTEND_PORT"
+    set_env_var "BACKEND_PORT"  "$BACKEND_PORT"
+    set_env_var "DB_PORT"       "$DB_PORT"
+    set_env_var "CORS_ORIGINS"  "[\"http://localhost\",\"http://localhost:${FRONTEND_PORT}\",\"http://localhost:${BACKEND_PORT}\"]"
+    set_env_var "VITE_API_URL"  "http://localhost:${BACKEND_PORT}"
+    ok ".env updated with new port assignments"
   fi
 }
 
@@ -765,8 +821,8 @@ case "$COMMAND" in
     detect_os
     ensure_docker
     prepare_lockfile
-    generate_env
     check_ports
+    generate_env
     start_services
     wait_for_services
     print_summary
