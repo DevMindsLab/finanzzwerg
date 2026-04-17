@@ -5,7 +5,7 @@ from app.api.deps import DB, CurrentUser
 from app.core.security import create_access_token
 from app.core.seeder import seed_default_categories
 from app.models.user import User
-from app.schemas.auth import TokenResponse, UserLogin, UserProfileUpdate, UserRegister, UserResponse
+from app.schemas.auth import AccountDeleteRequest, TokenResponse, UserLogin, UserProfileUpdate, UserRegister, UserResponse
 from app.services.auth_service import auth_service
 
 router = APIRouter()
@@ -48,3 +48,10 @@ def update_me(data: UserProfileUpdate, db: Session = DB, current_user: User = Cu
     if error:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error)
     return updated
+
+
+@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
+def delete_me(data: AccountDeleteRequest, db: Session = DB, current_user: User = CurrentUser):
+    error = auth_service.delete_account(db, current_user, data.password)
+    if error:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error)

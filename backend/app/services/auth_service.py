@@ -43,6 +43,30 @@ class AuthService:
         db.refresh(user)
         return user, None
 
+    def delete_account(self, db: Session, user: User, password: str) -> str | None:
+        """Verify password, then delete the user and all their data. Returns error or None."""
+        if not verify_password(password, user.password_hash):
+            return "Password is incorrect."
+
+        # Import here to avoid circular imports
+        from app.models.transaction import Transaction
+        from app.models.rule import Rule
+        from app.models.budget import Budget
+        from app.models.import_job import ImportJob
+        from app.models.csv_preset import CsvPreset
+        from app.models.category import Category
+
+        # Delete in FK-safe order: dependents before categories, categories before user
+        db.query(Transaction).filter(Transaction.user_id == user.id).delete()
+        db.query(Rule).filter(Rule.user_id == user.id).delete()
+        db.query(Budget).filter(Budget.user_id == user.id).delete()
+        db.query(ImportJob).filter(ImportJob.user_id == user.id).delete()
+        db.query(CsvPreset).filter(CsvPreset.user_id == user.id).delete()
+        db.query(Category).filter(Category.user_id == user.id).delete()
+        db.delete(user)
+        db.commit()
+        return None
+
     def authenticate(self, db: Session, email: str, password: str) -> User | None:
         """Return the user if credentials are valid, otherwise None."""
         user = self.get_by_email(db, email.lower())

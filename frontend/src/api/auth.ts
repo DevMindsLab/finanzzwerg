@@ -37,4 +37,8 @@ export const authApi = {
     const { data } = await client.patch<User>("/auth/me", payload);
     return data;
   },
+
+  deleteAccount: async (password: string): Promise<void> => {
+    await client.delete("/auth/me", { data: { password } });
+  },
 };

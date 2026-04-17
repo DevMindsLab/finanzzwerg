@@ -29,3 +29,7 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserResponse
+
+
+class AccountDeleteRequest(BaseModel):
+    password: str
