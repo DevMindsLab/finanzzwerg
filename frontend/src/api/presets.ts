@@ -7,6 +7,13 @@ import type { ImportPreset } from "@/types";
 /** Preset with profile already converted to frontend UploadOptions */
 export type ResolvedPreset = Omit<ImportPreset, "profile"> & { profile: UploadOptions };
 
+/** Shape of an exported .flpreset.json file */
+interface PresetFilePayload {
+  financeless_preset: string;
+  name: string;
+  profile: Record<string, unknown>;
+}
+
 // ── Conversion helpers ────────────────────────────────────────────────────────
 
 /** Frontend UploadOptions → backend CSVProfile (description_columns as list) */
@@ -31,6 +38,45 @@ function toFrontendOpts(profile: Record<string, unknown>): UploadOptions {
       ? (cols as string[]).join(", ")
       : (cols as string) ?? "description",
   };
+}
+
+// ── Import / Export helpers ───────────────────────────────────────────────────
+
+/** Trigger a browser download of the preset as a .flpreset.json file */
+export function exportPreset(preset: ResolvedPreset): void {
+  const payload: PresetFilePayload = {
+    financeless_preset: "1.0",
+    name: preset.name,
+    profile: toBackendProfile(preset.profile),
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${preset.name.replace(/[^a-z0-9_-]/gi, "_")}.flpreset.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/** Read a .flpreset.json file and return resolved name + UploadOptions */
+export function parsePresetFile(file: File): Promise<{ name: string; profile: UploadOptions }> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const json = JSON.parse(e.target?.result as string) as PresetFilePayload;
+        if (!json.financeless_preset || !json.name || typeof json.profile !== "object") {
+          reject(new Error("invalid"));
+          return;
+        }
+        resolve({ name: json.name, profile: toFrontendOpts(json.profile) });
+      } catch {
+        reject(new Error("invalid"));
+      }
+    };
+    reader.onerror = () => reject(new Error("read_error"));
+    reader.readAsText(file);
+  });
 }
 
 type RawPreset = {

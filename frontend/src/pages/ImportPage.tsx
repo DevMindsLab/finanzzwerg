@@ -17,9 +17,11 @@ import {
   X,
   BookOpen,
   Star,
+  Download,
+  FolderInput,
 } from "lucide-react";
 import { importsApi, type UploadOptions } from "@/api/imports";
-import { presetsApi, type ResolvedPreset } from "@/api/presets";
+import { presetsApi, exportPreset, parsePresetFile, type ResolvedPreset } from "@/api/presets";
 import type { ImportJob } from "@/types";
 import { formatDate } from "@/lib/utils";
 import Input from "@/components/ui/Input";
@@ -153,16 +155,17 @@ function HelpDialog({ onClose }: { onClose: () => void }) {
 interface PresetModalProps {
   mode: "create" | "edit";
   preset?: ResolvedPreset;
+  initialData?: { name: string; profile: UploadOptions };
   currentOpts: UploadOptions;
   isPending: boolean;
   onSave: (name: string, profile: UploadOptions) => void;
   onClose: () => void;
 }
 
-function PresetModal({ mode, preset, currentOpts, isPending, onSave, onClose }: PresetModalProps) {
+function PresetModal({ mode, preset, initialData, currentOpts, isPending, onSave, onClose }: PresetModalProps) {
   const { t } = useTranslation();
-  const [name, setName] = useState(preset?.name ?? "");
-  const [localOpts, setLocalOpts] = useState<UploadOptions>(preset?.profile ?? currentOpts);
+  const [name, setName] = useState(preset?.name ?? initialData?.name ?? "");
+  const [localOpts, setLocalOpts] = useState<UploadOptions>(preset?.profile ?? initialData?.profile ?? currentOpts);
 
   const setOpt =
     (k: keyof UploadOptions) =>
@@ -240,12 +243,13 @@ export default function ImportPage() {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
+  const importPresetRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [pendingJobId, setPendingJobId] = useState<number | null>(null);
 
   const [presetModal, setPresetModal] = useState<
-    null | { mode: "create" } | { mode: "edit"; preset: ResolvedPreset }
+    null | { mode: "create"; initialData?: { name: string; profile: UploadOptions } } | { mode: "edit"; preset: ResolvedPreset }
   >(null);
   const [helpOpen, setHelpOpen] = useState(false);
 
@@ -385,6 +389,21 @@ export default function ImportPage() {
     else setDefaultMutation.mutate(preset.id);
   };
 
+  const handleExportPreset = (preset: ResolvedPreset) => {
+    exportPreset(preset);
+  };
+
+  const handleImportPresetFile = async (file: File) => {
+    try {
+      const data = await parsePresetFile(file);
+      setPresetModal({ mode: "create", initialData: data });
+    } catch {
+      toast.error(t("import.preset_import_error"));
+    }
+    // Reset so the same file can be re-selected
+    if (importPresetRef.current) importPresetRef.current.value = "";
+  };
+
   const isModalPending = createPresetMutation.isPending || updatePresetMutation.isPending;
 
   return (
@@ -469,6 +488,18 @@ export default function ImportPage() {
 
       {/* Presets */}
       <div className="card p-5">
+        {/* Hidden file input for importing preset JSON */}
+        <input
+          ref={importPresetRef}
+          type="file"
+          accept=".json,.flpreset.json"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) handleImportPresetFile(file);
+          }}
+        />
+
         <div className="flex items-center justify-between mb-4">
           <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t("import.presets")}</p>
           <div className="flex items-center gap-2">
@@ -478,6 +509,14 @@ export default function ImportPage() {
               className="p-1.5 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-950 transition-colors"
             >
               <HelpCircle className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => importPresetRef.current?.click()}
+              title={t("import.preset_import")}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
+            >
+              <FolderInput className="w-3.5 h-3.5" />
+              {t("import.preset_import")}
             </button>
             <button
               onClick={() => setPresetModal({ mode: "create" })}
@@ -534,6 +573,13 @@ export default function ImportPage() {
                   <Pencil className="w-3 h-3" />
                 </button>
                 <button
+                  onClick={() => handleExportPreset(preset)}
+                  className="px-1.5 py-1.5 text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950 opacity-0 group-hover:opacity-100 transition-all"
+                  title={t("import.preset_export")}
+                >
+                  <Download className="w-3 h-3" />
+                </button>
+                <button
                   onClick={() => handleDeletePreset(preset)}
                   disabled={deletePresetMutation.isPending}
                   className="px-1.5 py-1.5 text-slate-300 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950 opacity-0 group-hover:opacity-100 transition-all disabled:opacity-30"
@@ -569,6 +615,7 @@ export default function ImportPage() {
         <PresetModal
           mode={presetModal.mode}
           preset={"preset" in presetModal ? presetModal.preset : undefined}
+          initialData={"initialData" in presetModal ? presetModal.initialData : undefined}
           currentOpts={opts}
           isPending={isModalPending}
           onSave={handlePresetSave}
