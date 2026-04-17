@@ -29,15 +29,15 @@ function progressColor(pct: number) {
 }
 
 function progressBg(pct: number) {
-  if (pct >= 100) return "bg-rose-100";
-  if (pct >= 75)  return "bg-amber-100";
-  return "bg-emerald-100";
+  if (pct >= 100) return "bg-rose-100 dark:bg-rose-900/40";
+  if (pct >= 75)  return "bg-amber-100 dark:bg-amber-900/40";
+  return "bg-emerald-100 dark:bg-emerald-900/40";
 }
 
 function textColor(pct: number) {
-  if (pct >= 100) return "text-rose-600";
-  if (pct >= 75)  return "text-amber-600";
-  return "text-emerald-600";
+  if (pct >= 100) return "text-rose-600 dark:text-rose-400";
+  if (pct >= 75)  return "text-amber-600 dark:text-amber-400";
+  return "text-emerald-600 dark:text-emerald-400";
 }
 
 // ── BudgetModal ────────────────────────────────────────────────────────────────
@@ -58,7 +58,6 @@ function BudgetModal({ budget, categories, usedCategoryIds, isPending, onSave, o
   const [categoryId, setCategoryId] = useState<number>(budget?.category_id ?? 0);
   const [amount, setAmount] = useState(budget ? parseFloat(budget.amount) : 0);
 
-  // Only expense categories for budgets; filter out already-budgeted ones (except current)
   const available = categories.filter(
     (c) => !c.is_income && (!usedCategoryIds.has(c.id) || c.id === budget?.category_id),
   );
@@ -72,12 +71,12 @@ function BudgetModal({ budget, categories, usedCategoryIds, isPending, onSave, o
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-          <h2 className="font-semibold text-slate-800">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-sm flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-700">
+          <h2 className="font-semibold text-slate-800 dark:text-white">
             {isEdit ? t("budget.edit") : t("budget.add")}
           </h2>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-slate-100 transition-colors">
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
             <X className="w-5 h-5 text-slate-400" />
           </button>
         </div>
@@ -93,13 +92,10 @@ function BudgetModal({ budget, categories, usedCategoryIds, isPending, onSave, o
           )}
           {isEdit && (
             <div>
-              <p className="text-xs font-medium text-slate-500 mb-1">{t("budget.category_label")}</p>
-              <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-lg border border-slate-200">
-                <span
-                  className="w-3 h-3 rounded-full shrink-0"
-                  style={{ background: budget.category.color }}
-                />
-                <span className="text-sm font-medium text-slate-700">{budget.category.name}</span>
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">{t("budget.category_label")}</p>
+              <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-600">
+                <span className="w-3 h-3 rounded-full shrink-0" style={{ background: budget.category.color }} />
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{budget.category.name}</span>
               </div>
             </div>
           )}
@@ -115,10 +111,10 @@ function BudgetModal({ budget, categories, usedCategoryIds, isPending, onSave, o
           />
         </div>
 
-        <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-100">
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-100 dark:border-slate-700">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 bg-white hover:bg-slate-50 transition-colors"
+            className="px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 bg-white hover:bg-slate-50 transition-colors dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
           >
             {t("common.cancel")}
           </button>
@@ -157,27 +153,21 @@ function BudgetCard({
   return (
     <div className="card p-5 group cursor-pointer hover:shadow-md transition-shadow" onClick={onClick}>
       <div className="flex items-start justify-between gap-3 mb-3">
-        {/* Category name + color dot */}
         <div className="flex items-center gap-2 min-w-0">
-          <span
-            className="w-3 h-3 rounded-full shrink-0"
-            style={{ background: budget.category.color }}
-          />
-          <p className="font-semibold text-slate-800 truncate">{budget.category.name}</p>
+          <span className="w-3 h-3 rounded-full shrink-0" style={{ background: budget.category.color }} />
+          <p className="font-semibold text-slate-800 dark:text-slate-100 truncate">{budget.category.name}</p>
         </div>
-
-        {/* Actions (show on hover) */}
         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
           <button
             onClick={(e) => { e.stopPropagation(); onEdit(); }}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-colors"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-950 transition-colors"
             title={t("budget.edit")}
           >
             <Pencil className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); onDelete(); }}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950 transition-colors"
             title={t("common.delete")}
           >
             <Trash2 className="w-3.5 h-3.5" />
@@ -185,25 +175,15 @@ function BudgetCard({
         </div>
       </div>
 
-      {/* Amounts */}
       <div className="flex items-baseline justify-between mb-2">
-        <span className="text-lg font-bold text-slate-800">
-          {formatCurrency(budget.spent)}
-        </span>
-        <span className="text-sm text-slate-400">
-          {t("budget.of")} {formatCurrency(budget.amount)}
-        </span>
+        <span className="text-lg font-bold text-slate-800 dark:text-slate-100">{formatCurrency(budget.spent)}</span>
+        <span className="text-sm text-slate-400 dark:text-slate-500">{t("budget.of")} {formatCurrency(budget.amount)}</span>
       </div>
 
-      {/* Progress bar */}
       <div className={`w-full h-2 rounded-full ${progressBg(budget.percentage)}`}>
-        <div
-          className={`h-2 rounded-full transition-all ${progressColor(budget.percentage)}`}
-          style={{ width: `${pct}%` }}
-        />
+        <div className={`h-2 rounded-full transition-all ${progressColor(budget.percentage)}`} style={{ width: `${pct}%` }} />
       </div>
 
-      {/* Remaining / over */}
       <p className={`text-xs mt-1.5 ${textColor(budget.percentage)}`}>
         {isOver
           ? `${formatCurrency(Math.abs(remaining))} ${t("budget.over_budget")}`
@@ -222,7 +202,7 @@ export default function BudgetPage() {
 
   const today = new Date();
   const [year, setYear]   = useState(today.getFullYear());
-  const [month, setMonth] = useState(today.getMonth() + 1); // 1-based
+  const [month, setMonth] = useState(today.getMonth() + 1);
 
   const buildMonthParams = (categoryId: number) => {
     const mm = String(month).padStart(2, "0");
@@ -237,8 +217,6 @@ export default function BudgetPage() {
 
   const [modal, setModal] = useState<null | { budget?: Budget }>(null);
 
-  // ── Queries ────────────────────────────────────────────────────────────────
-
   const { data: budgets = [], isLoading } = useQuery({
     queryKey: ["budgets", year, month],
     queryFn: () => budgetsApi.list(year, month),
@@ -249,47 +227,28 @@ export default function BudgetPage() {
     queryFn: categoriesApi.list,
   });
 
-  // ── Mutations ──────────────────────────────────────────────────────────────
-
   const createMutation = useMutation({
     mutationFn: ({ categoryId, amount }: { categoryId: number; amount: number }) =>
       budgetsApi.create({ category_id: categoryId, amount }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["budgets"] });
-      setModal(null);
-      toast.success(t("budget.created"));
-    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["budgets"] }); setModal(null); toast.success(t("budget.created")); },
     onError: (err: Error) => toast.error(err.message),
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, amount }: { id: number; amount: number }) =>
-      budgetsApi.update(id, { amount }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["budgets"] });
-      setModal(null);
-      toast.success(t("budget.updated"));
-    },
+    mutationFn: ({ id, amount }: { id: number; amount: number }) => budgetsApi.update(id, { amount }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["budgets"] }); setModal(null); toast.success(t("budget.updated")); },
     onError: (err: Error) => toast.error(err.message),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => budgetsApi.delete(id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["budgets"] });
-      toast.success(t("budget.deleted"));
-    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["budgets"] }); toast.success(t("budget.deleted")); },
     onError: (err: Error) => toast.error(err.message),
   });
 
-  // ── Handlers ──────────────────────────────────────────────────────────────
-
   const handleSave = (categoryId: number, amount: number) => {
-    if (modal?.budget) {
-      updateMutation.mutate({ id: modal.budget.id, amount });
-    } else {
-      createMutation.mutate({ categoryId, amount });
-    }
+    if (modal?.budget) updateMutation.mutate({ id: modal.budget.id, amount });
+    else createMutation.mutate({ categoryId, amount });
   };
 
   const handleDelete = (budget: Budget) => {
@@ -311,15 +270,13 @@ export default function BudgetPage() {
   const usedCategoryIds = new Set(budgets.map((b) => b.category_id));
   const isPending = createMutation.isPending || updateMutation.isPending;
 
-  // ── Render ─────────────────────────────────────────────────────────────────
-
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">{t("budget.title")}</h1>
-          <p className="text-sm text-slate-500 mt-0.5">{t("budget.subtitle")}</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{t("budget.title")}</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t("budget.subtitle")}</p>
         </div>
         <button
           onClick={() => setModal({})}
@@ -332,20 +289,14 @@ export default function BudgetPage() {
 
       {/* Month navigator */}
       <div className="flex items-center gap-3">
-        <button
-          onClick={prevMonth}
-          className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors"
-        >
-          <ChevronLeft className="w-4 h-4 text-slate-500" />
+        <button onClick={prevMonth} className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+          <ChevronLeft className="w-4 h-4 text-slate-500 dark:text-slate-400" />
         </button>
-        <span className="text-sm font-semibold text-slate-700 w-40 text-center">
+        <span className="text-sm font-semibold text-slate-700 dark:text-slate-200 w-40 text-center">
           {monthNames[month - 1]} {year}
         </span>
-        <button
-          onClick={nextMonth}
-          className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors"
-        >
-          <ChevronRight className="w-4 h-4 text-slate-500" />
+        <button onClick={nextMonth} className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+          <ChevronRight className="w-4 h-4 text-slate-500 dark:text-slate-400" />
         </button>
       </div>
 
@@ -356,10 +307,10 @@ export default function BudgetPage() {
         </div>
       ) : budgets.length === 0 ? (
         <div className="card flex flex-col items-center justify-center gap-3 py-20 text-center">
-          <PiggyBank className="w-12 h-12 text-slate-200" />
+          <PiggyBank className="w-12 h-12 text-slate-200 dark:text-slate-600" />
           <div>
-            <p className="font-semibold text-slate-700">{t("budget.no_budgets")}</p>
-            <p className="text-sm text-slate-400 mt-1 max-w-xs">{t("budget.no_budgets_hint")}</p>
+            <p className="font-semibold text-slate-700 dark:text-slate-300">{t("budget.no_budgets")}</p>
+            <p className="text-sm text-slate-400 dark:text-slate-500 mt-1 max-w-xs">{t("budget.no_budgets_hint")}</p>
           </div>
           <button
             onClick={() => setModal({})}

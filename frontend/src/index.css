@@ -21,7 +21,7 @@
 @layer components {
   /* Shared card surface */
   .card {
-    @apply bg-white rounded-xl border border-slate-200 shadow-sm;
+    @apply bg-white rounded-xl border border-slate-200 shadow-sm dark:bg-slate-800 dark:border-slate-700;
   }
 
   /* Subtle scrollbar on Webkit */
@@ -33,6 +33,6 @@
     @apply bg-transparent;
   }
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    @apply bg-slate-300 rounded-full;
+    @apply bg-slate-300 rounded-full dark:bg-slate-600;
   }
 }

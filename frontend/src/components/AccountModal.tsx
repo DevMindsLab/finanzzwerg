@@ -50,8 +50,6 @@ export default function AccountModal({ open, onClose }: Props) {
     setLoading(true);
     try {
       const updated = await authApi.updateProfile(payload);
-      // Update the stored token's user data by refreshing via login helper
-      // (token stays the same, only user object in context needs update)
       login(localStorage.getItem("fl_token")!, updated);
       toast.success(t("auth.profile_saved"));
       handleClose();
@@ -77,10 +75,10 @@ export default function AccountModal({ open, onClose }: Props) {
         {/* Divider */}
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-slate-200" />
+            <div className="w-full border-t border-slate-200 dark:border-slate-600" />
           </div>
           <div className="relative flex justify-center text-xs text-slate-400">
-            <span className="bg-white px-2">{t("auth.change_password")}</span>
+            <span className="bg-white dark:bg-slate-800 px-2">{t("auth.change_password")}</span>
           </div>
         </div>
 
@@ -104,7 +102,7 @@ export default function AccountModal({ open, onClose }: Props) {
         />
 
         {error && (
-          <p className="text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">
+          <p className="text-sm text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950 border border-rose-200 dark:border-rose-800 rounded-lg px-3 py-2">
             {error}
           </p>
         )}

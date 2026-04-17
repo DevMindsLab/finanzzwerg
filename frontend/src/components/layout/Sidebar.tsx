@@ -10,11 +10,15 @@ import {
   Upload,
   LogOut,
   Settings,
+  Sun,
+  Moon,
+  X,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { transactionsApi } from "@/api/transactions";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import AccountModal from "@/components/AccountModal";
 import { cn } from "@/lib/utils";
 
@@ -25,10 +29,11 @@ interface NavItem {
   badge?: number;
 }
 
-function SidebarLink({ item }: { item: NavItem }) {
+function SidebarLink({ item, onClick }: { item: NavItem; onClick?: () => void }) {
   return (
     <NavLink
       to={item.to}
+      onClick={onClick}
       className={({ isActive }) =>
         cn(
           "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
@@ -49,9 +54,15 @@ function SidebarLink({ item }: { item: NavItem }) {
   );
 }
 
-export default function Sidebar() {
+interface SidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { t, i18n } = useTranslation();
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [accountOpen, setAccountOpen] = useState(false);
 
@@ -83,9 +94,19 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="w-60 shrink-0 flex flex-col bg-slate-900 border-r border-slate-800 h-full">
-      {/* Logo */}
-      <div className="px-4 py-5 border-b border-slate-800">
+    <aside
+      className={cn(
+        // Base styles
+        "w-60 shrink-0 flex flex-col bg-slate-900 border-r border-slate-800 dark:bg-slate-950 dark:border-slate-800",
+        // Mobile: fixed drawer with slide transition
+        "fixed inset-y-0 left-0 z-40 transition-transform duration-300 ease-in-out",
+        isOpen ? "translate-x-0" : "-translate-x-full",
+        // Desktop: static in normal flow (overrides fixed)
+        "lg:static lg:translate-x-0 lg:h-full",
+      )}
+    >
+      {/* Logo + mobile close button */}
+      <div className="px-4 py-5 border-b border-slate-800 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center">
             <BarChart3 className="w-4 h-4 text-white" />
@@ -94,12 +115,20 @@ export default function Sidebar() {
             Financeless
           </span>
         </div>
+        {/* Close button — mobile only */}
+        <button
+          onClick={onClose}
+          className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+          aria-label="Close navigation"
+        >
+          <X className="w-4 h-4" />
+        </button>
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto scrollbar-thin">
         {navItems.map((item) => (
-          <SidebarLink key={item.to} item={item} />
+          <SidebarLink key={item.to} item={item} onClick={onClose} />
         ))}
       </nav>
 
@@ -123,19 +152,36 @@ export default function Sidebar() {
             <LogOut className="w-3.5 h-3.5" />
           </button>
         </div>
+
         <AccountModal open={accountOpen} onClose={() => setAccountOpen(false)} />
-        {/* Version + language */}
+
+        {/* Version + language + theme toggle */}
         <div className="flex items-center justify-between">
           <p className="text-slate-600 text-xs">Financeless v0.2.0</p>
-          <button
-            onClick={toggleLanguage}
-            className="flex items-center gap-1 rounded-md border border-slate-700 px-2 py-1 text-xs font-medium text-slate-400 hover:border-slate-500 hover:text-white transition-colors"
-            title={currentLang.startsWith("de") ? "Switch to English" : "Zu Deutsch wechseln"}
-          >
-            <span className={currentLang.startsWith("de") ? "text-white" : "text-slate-500"}>DE</span>
-            <span className="text-slate-600">/</span>
-            <span className={!currentLang.startsWith("de") ? "text-white" : "text-slate-500"}>EN</span>
-          </button>
+          <div className="flex items-center gap-1.5">
+            {/* Dark/light toggle */}
+            <button
+              onClick={toggleTheme}
+              title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              className="flex items-center rounded-md border border-slate-700 px-2 py-1 text-slate-400 hover:border-slate-500 hover:text-white transition-colors"
+            >
+              {theme === "dark" ? (
+                <Sun className="w-3.5 h-3.5" />
+              ) : (
+                <Moon className="w-3.5 h-3.5" />
+              )}
+            </button>
+            {/* Language toggle */}
+            <button
+              onClick={toggleLanguage}
+              className="flex items-center gap-1 rounded-md border border-slate-700 px-2 py-1 text-xs font-medium text-slate-400 hover:border-slate-500 hover:text-white transition-colors"
+              title={currentLang.startsWith("de") ? "Switch to English" : "Zu Deutsch wechseln"}
+            >
+              <span className={currentLang.startsWith("de") ? "text-white" : "text-slate-500"}>DE</span>
+              <span className="text-slate-600">/</span>
+              <span className={!currentLang.startsWith("de") ? "text-white" : "text-slate-500"}>EN</span>
+            </button>
+          </div>
         </div>
       </div>
     </aside>

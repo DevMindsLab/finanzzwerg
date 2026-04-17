@@ -38,6 +38,8 @@ function countActiveFilters(f: Filters) {
   return Object.values(f).filter(Boolean).length;
 }
 
+const fieldClass = "rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100";
+
 export default function TransactionsPage() {
   const { t } = useTranslation();
   const qc = useQueryClient();
@@ -168,23 +170,23 @@ export default function TransactionsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="shrink-0">
-          <h1 className="text-2xl font-bold text-slate-900">{t("transactions.title")}</h1>
-          <p className="text-sm text-slate-500 mt-0.5">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex-1 min-w-0">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{t("transactions.title")}</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
             {t("transactions.subtitle", { count: total })}
           </p>
         </div>
 
         {/* Search */}
-        <div className="relative flex-1 max-w-sm">
+        <div className="relative w-full sm:w-auto sm:flex-1 sm:max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           <input
             type="search"
             placeholder={t("transactions.search_placeholder")}
             value={search}
             onChange={(e) => handleSearchChange(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-300 bg-white text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+            className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-300 bg-white text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
 
@@ -193,8 +195,8 @@ export default function TransactionsPage() {
           onClick={() => setShowFilters((v) => !v)}
           className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
             showFilters || activeCount > 0
-              ? "border-brand-400 bg-brand-50 text-brand-700"
-              : "border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
+              ? "border-brand-400 bg-brand-50 text-brand-700 dark:bg-brand-950 dark:text-brand-300 dark:border-brand-700"
+              : "border-slate-300 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"
           }`}
         >
           <SlidersHorizontal className="w-4 h-4" />
@@ -211,108 +213,38 @@ export default function TransactionsPage() {
       {showFilters && (
         <div className="card p-4 space-y-3">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3">
-            {/* Type */}
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">
-                {t("filters.type")}
-              </label>
-              <Select
-                options={typeOptions}
-                placeholder={t("filters.all_types")}
-                value={filters.transaction_type}
-                onChange={setFilter("transaction_type")}
-              />
+              <label className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t("filters.type")}</label>
+              <Select options={typeOptions} placeholder={t("filters.all_types")} value={filters.transaction_type} onChange={setFilter("transaction_type")} />
             </div>
-
-            {/* Status */}
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">
-                {t("transactions.col_status")}
-              </label>
-              <Select
-                options={statusOptions}
-                placeholder={t("transactions.all_statuses")}
-                value={filters.status}
-                onChange={setFilter("status")}
-              />
+              <label className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t("transactions.col_status")}</label>
+              <Select options={statusOptions} placeholder={t("transactions.all_statuses")} value={filters.status} onChange={setFilter("status")} />
             </div>
-
-            {/* Category */}
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">
-                {t("filters.category")}
-              </label>
-              <Select
-                options={categoryOptions}
-                placeholder={t("filters.all_categories")}
-                value={filters.category_id}
-                onChange={setFilter("category_id")}
-              />
+              <label className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t("filters.category")}</label>
+              <Select options={categoryOptions} placeholder={t("filters.all_categories")} value={filters.category_id} onChange={setFilter("category_id")} />
             </div>
-
-            {/* Date from */}
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">
-                {t("filters.date_from")}
-              </label>
-              <input
-                type="date"
-                value={filters.date_from}
-                onChange={setFilter("date_from")}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
-              />
+              <label className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t("filters.date_from")}</label>
+              <input type="date" value={filters.date_from} onChange={setFilter("date_from")} className={fieldClass} />
             </div>
-
-            {/* Date to */}
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">
-                {t("filters.date_to")}
-              </label>
-              <input
-                type="date"
-                value={filters.date_to}
-                onChange={setFilter("date_to")}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
-              />
+              <label className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t("filters.date_to")}</label>
+              <input type="date" value={filters.date_to} onChange={setFilter("date_to")} className={fieldClass} />
             </div>
-
-            {/* Amount min */}
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">
-                {t("filters.amount_min")}
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                placeholder="−"
-                value={filters.amount_min}
-                onChange={setFilter("amount_min")}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
-              />
+              <label className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t("filters.amount_min")}</label>
+              <input type="number" step="0.01" placeholder="−" value={filters.amount_min} onChange={setFilter("amount_min")} className={fieldClass} />
             </div>
-
-            {/* Amount max */}
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">
-                {t("filters.amount_max")}
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                placeholder="+"
-                value={filters.amount_max}
-                onChange={setFilter("amount_max")}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
-              />
+              <label className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t("filters.amount_max")}</label>
+              <input type="number" step="0.01" placeholder="+" value={filters.amount_max} onChange={setFilter("amount_max")} className={fieldClass} />
             </div>
           </div>
-
           {activeCount > 0 && (
             <div className="flex justify-end">
-              <button
-                onClick={clearFilters}
-                className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-rose-600 transition-colors"
-              >
+              <button onClick={clearFilters} className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors">
                 <X className="w-3.5 h-3.5" />
                 {t("filters.clear")}
               </button>
@@ -333,76 +265,78 @@ export default function TransactionsPage() {
             <p className="text-sm">{t("transactions.no_transactions")}</p>
           </div>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="border-b border-slate-100 bg-slate-50">
-              <tr>
-                <th className="text-left px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">{t("transactions.col_date")}</th>
-                <th className="text-left px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">{t("transactions.col_description")}</th>
-                <th className="text-left px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">{t("transactions.col_category")}</th>
-                <th className="text-left px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">{t("transactions.col_status")}</th>
-                <th className="text-right px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">{t("transactions.col_amount")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {transactions.map((txn) => (
-                <tr key={txn.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors">
-                  <td className="px-6 py-3 text-slate-600 whitespace-nowrap">{formatDate(txn.date)}</td>
-                  <td className="px-6 py-3 max-w-xs">
-                    <button
-                      onClick={() => setCreateRuleDesc(txn.description)}
-                      className="group/desc flex items-center gap-1.5 text-left truncate max-w-full"
-                      title={t("transactions.create_rule_title")}
-                    >
-                      <span className="text-slate-800 truncate">{txn.description}</span>
-                      <Zap className="w-3 h-3 shrink-0 opacity-0 group-hover/desc:opacity-100 text-brand-400 transition-opacity" />
-                    </button>
-                  </td>
-                  <td className="px-6 py-3">
-                    {editingCategoryId === txn.id ? (
-                      <Select
-                        options={categoryOptions}
-                        value={String(txn.category_id ?? "")}
-                        placeholder={t("inbox.select_category")}
-                        autoFocus
-                        onChange={(e) => {
-                          if (e.target.value) {
-                            categorizeMutation.mutate({ txnId: txn.id, categoryId: parseInt(e.target.value) });
-                          }
-                          setEditingCategoryId(null);
-                        }}
-                        onBlur={() => setEditingCategoryId(null)}
-                        className="py-1 text-xs"
-                      />
-                    ) : (
-                      <button
-                        onClick={() => setEditingCategoryId(txn.id)}
-                        className="inline-flex items-center gap-1.5 group/cat text-left"
-                        title={t("transactions.change_category")}
-                      >
-                        {txn.category ? (
-                          <>
-                            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: txn.category.color }} />
-                            <span className="text-slate-700 group-hover/cat:text-brand-600 transition-colors">{txn.category.name}</span>
-                          </>
-                        ) : (
-                          <span className="text-slate-400 group-hover/cat:text-brand-600 transition-colors">—</span>
-                        )}
-                        <Pencil className="w-3 h-3 opacity-0 group-hover/cat:opacity-100 text-brand-400 transition-opacity shrink-0" />
-                      </button>
-                    )}
-                  </td>
-                  <td className="px-6 py-3">
-                    <Badge variant={STATUS_BADGE_VARIANT[txn.status]}>
-                      {STATUS_LABELS[txn.status]}
-                    </Badge>
-                  </td>
-                  <td className={`px-6 py-3 text-right font-medium tabular-nums ${amountColor(txn.amount)}`}>
-                    {formatCurrency(txn.amount)}
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                <tr>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t("transactions.col_date")}</th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t("transactions.col_description")}</th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t("transactions.col_category")}</th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t("transactions.col_status")}</th>
+                  <th className="text-right px-6 py-3 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t("transactions.col_amount")}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {transactions.map((txn) => (
+                  <tr key={txn.id} className="border-b border-slate-50 dark:border-slate-700/50 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                    <td className="px-6 py-3 text-slate-600 dark:text-slate-400 whitespace-nowrap">{formatDate(txn.date)}</td>
+                    <td className="px-6 py-3 max-w-xs">
+                      <button
+                        onClick={() => setCreateRuleDesc(txn.description)}
+                        className="group/desc flex items-center gap-1.5 text-left truncate max-w-full"
+                        title={t("transactions.create_rule_title")}
+                      >
+                        <span className="text-slate-800 dark:text-slate-200 truncate">{txn.description}</span>
+                        <Zap className="w-3 h-3 shrink-0 opacity-0 group-hover/desc:opacity-100 text-brand-400 transition-opacity" />
+                      </button>
+                    </td>
+                    <td className="px-6 py-3">
+                      {editingCategoryId === txn.id ? (
+                        <Select
+                          options={categoryOptions}
+                          value={String(txn.category_id ?? "")}
+                          placeholder={t("inbox.select_category")}
+                          autoFocus
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              categorizeMutation.mutate({ txnId: txn.id, categoryId: parseInt(e.target.value) });
+                            }
+                            setEditingCategoryId(null);
+                          }}
+                          onBlur={() => setEditingCategoryId(null)}
+                          className="py-1 text-xs"
+                        />
+                      ) : (
+                        <button
+                          onClick={() => setEditingCategoryId(txn.id)}
+                          className="inline-flex items-center gap-1.5 group/cat text-left"
+                          title={t("transactions.change_category")}
+                        >
+                          {txn.category ? (
+                            <>
+                              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: txn.category.color }} />
+                              <span className="text-slate-700 dark:text-slate-300 group-hover/cat:text-brand-600 dark:group-hover/cat:text-brand-400 transition-colors">{txn.category.name}</span>
+                            </>
+                          ) : (
+                            <span className="text-slate-400 group-hover/cat:text-brand-600 dark:group-hover/cat:text-brand-400 transition-colors">—</span>
+                          )}
+                          <Pencil className="w-3 h-3 opacity-0 group-hover/cat:opacity-100 text-brand-400 transition-opacity shrink-0" />
+                        </button>
+                      )}
+                    </td>
+                    <td className="px-6 py-3">
+                      <Badge variant={STATUS_BADGE_VARIANT[txn.status]}>
+                        {STATUS_LABELS[txn.status]}
+                      </Badge>
+                    </td>
+                    <td className={`px-6 py-3 text-right font-medium tabular-nums ${amountColor(txn.amount)}`}>
+                      {formatCurrency(txn.amount)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
@@ -412,17 +346,17 @@ export default function TransactionsPage() {
           <button
             disabled={page <= 1}
             onClick={() => setPage((p) => p - 1)}
-            className="px-4 py-2 text-sm rounded-lg border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-4 py-2 text-sm rounded-lg border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
           >
             {t("transactions.previous")}
           </button>
-          <span className="text-sm text-slate-600">
+          <span className="text-sm text-slate-600 dark:text-slate-400">
             {t("transactions.page_info", { page, pages, total })}
           </span>
           <button
             disabled={page >= pages}
             onClick={() => setPage((p) => p + 1)}
-            className="px-4 py-2 text-sm rounded-lg border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-4 py-2 text-sm rounded-lg border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
           >
             {t("transactions.next")}
           </button>
@@ -441,7 +375,6 @@ export default function TransactionsPage() {
           onClose={() => setCreateRuleDesc(null)}
         />
       )}
-
     </div>
   );
 }
@@ -490,7 +423,7 @@ function CreateRuleModal({
         <>
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 bg-white hover:bg-slate-50 transition-colors"
+            className="px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 bg-white hover:bg-slate-50 transition-colors dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
           >
             {t("common.cancel")}
           </button>
@@ -505,33 +438,14 @@ function CreateRuleModal({
       }
     >
       <div className="space-y-4">
-        <p className="text-sm text-slate-500">{t("transactions.create_rule_desc")}</p>
-        <code className="block text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-700 break-all">
+        <p className="text-sm text-slate-500 dark:text-slate-400">{t("transactions.create_rule_desc")}</p>
+        <code className="block text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-700 dark:text-slate-300 break-all">
           {description}
         </code>
-        <Input
-          label={t("transactions.create_rule_name")}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-        <Input
-          label={t("transactions.create_rule_pattern")}
-          value={pattern}
-          onChange={(e) => setPattern(e.target.value)}
-          hint={t("rules.pattern_hint")}
-        />
-        <Select
-          label={t("transactions.create_rule_type")}
-          options={matchTypeOptions}
-          value={matchType}
-          onChange={(e) => setMatchType(e.target.value as MatchType)}
-        />
-        <Select
-          label={t("transactions.create_rule_category")}
-          options={allCategoryOptions}
-          value={categoryId}
-          onChange={(e) => setCategoryId(e.target.value)}
-        />
+        <Input label={t("transactions.create_rule_name")} value={name} onChange={(e) => setName(e.target.value)} />
+        <Input label={t("transactions.create_rule_pattern")} value={pattern} onChange={(e) => setPattern(e.target.value)} hint={t("rules.pattern_hint")} />
+        <Select label={t("transactions.create_rule_type")} options={matchTypeOptions} value={matchType} onChange={(e) => setMatchType(e.target.value as MatchType)} />
+        <Select label={t("transactions.create_rule_category")} options={allCategoryOptions} value={categoryId} onChange={(e) => setCategoryId(e.target.value)} />
       </div>
     </Modal>
   );

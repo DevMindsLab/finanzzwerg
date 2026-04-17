@@ -22,7 +22,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
     return (
       <div className="flex flex-col gap-1">
         {label && (
-          <label htmlFor={selectId} className="text-sm font-medium text-slate-700">
+          <label htmlFor={selectId} className="text-sm font-medium text-slate-700 dark:text-slate-300">
             {label}
           </label>
         )}
@@ -32,8 +32,10 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
             id={selectId}
             className={cn(
               "w-full appearance-none rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 pr-9",
+              "dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100",
               "focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500",
               "disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed",
+              "dark:disabled:bg-slate-800 dark:disabled:text-slate-500",
               error && "border-rose-400 focus:border-rose-400 focus:ring-rose-400",
               className,
             )}
@@ -52,8 +54,8 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
           </select>
           <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
         </div>
-        {error && <p className="text-xs text-rose-600">{error}</p>}
-        {hint && !error && <p className="text-xs text-slate-500">{hint}</p>}
+        {error && <p className="text-xs text-rose-600 dark:text-rose-400">{error}</p>}
+        {hint && !error && <p className="text-xs text-slate-500 dark:text-slate-400">{hint}</p>}
       </div>
     );
   },

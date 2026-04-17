@@ -54,17 +54,17 @@ function JobRow({ job }: { job: ImportJob }) {
   const { t } = useTranslation();
   const Icon = STATUS_ICON[job.status] ?? Clock;
   return (
-    <div className="flex items-center gap-4 px-6 py-4 border-b border-slate-50 last:border-0">
+    <div className="flex items-center gap-4 px-6 py-4 border-b border-slate-50 dark:border-slate-700/50 last:border-0">
       <Icon className={`w-5 h-5 shrink-0 ${STATUS_COLOR[job.status]}`} />
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-slate-800 truncate">{job.filename}</p>
-        <p className="text-xs text-slate-500 mt-0.5">
+        <p className="font-medium text-slate-800 dark:text-slate-200 truncate">{job.filename}</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
           {formatDate(job.created_at)}
           {job.total_rows !== null &&
             ` · ${t("import.imported", { processed: job.processed_rows, duplicates: job.duplicate_rows })}`}
         </p>
         {job.error_message && (
-          <p className="text-xs text-rose-600 mt-1 truncate" title={job.error_message}>
+          <p className="text-xs text-rose-600 dark:text-rose-400 mt-1 truncate" title={job.error_message}>
             {job.error_message}
           </p>
         )}
@@ -96,62 +96,46 @@ function HelpDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-700 shrink-0">
           <div className="flex items-center gap-2">
             <BookOpen className="w-5 h-5 text-brand-500" />
-            <h2 className="font-semibold text-slate-800">{t("import.help_title")}</h2>
+            <h2 className="font-semibold text-slate-800 dark:text-white">{t("import.help_title")}</h2>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-lg hover:bg-slate-100 transition-colors"
-          >
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
             <X className="w-5 h-5 text-slate-400" />
           </button>
         </div>
 
-        {/* Body */}
         <div className="overflow-y-auto px-6 py-5 space-y-6">
-          <p className="text-sm text-slate-500">{t("import.help_intro")}</p>
-
-          {/* Step-by-step */}
+          <p className="text-sm text-slate-500 dark:text-slate-400">{t("import.help_intro")}</p>
           <ol className="space-y-4">
             {steps.map((n) => (
               <li key={n} className="flex gap-3">
-                <span className="flex-none w-6 h-6 rounded-full bg-brand-100 text-brand-700 text-xs flex items-center justify-center font-bold">
+                <span className="flex-none w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900 text-brand-700 dark:text-brand-300 text-xs flex items-center justify-center font-bold">
                   {n}
                 </span>
                 <div>
-                  <p className="font-medium text-slate-800 text-sm">
-                    {t(`import.help_step${n}_title`)}
-                  </p>
-                  <p className="text-sm text-slate-500 mt-0.5">
-                    {t(`import.help_step${n}_body`)}
-                  </p>
+                  <p className="font-medium text-slate-800 dark:text-slate-200 text-sm">{t(`import.help_step${n}_title`)}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t(`import.help_step${n}_body`)}</p>
                 </div>
               </li>
             ))}
           </ol>
-
-          {/* Field reference */}
           <div>
-            <p className="font-semibold text-slate-700 text-sm mb-3">
-              {t("import.help_fields_title")}
-            </p>
+            <p className="font-semibold text-slate-700 dark:text-slate-300 text-sm mb-3">{t("import.help_fields_title")}</p>
             <div className="space-y-3">
               {fields.map((f) => (
                 <div key={f.key}>
-                  <p className="text-xs font-semibold text-slate-700">{f.label}</p>
-                  <p className="text-xs text-slate-500 mt-0.5">{f.desc}</p>
+                  <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">{f.label}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{f.desc}</p>
                 </div>
               ))}
             </div>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="shrink-0 flex justify-end px-6 py-4 border-t border-slate-100">
+        <div className="shrink-0 flex justify-end px-6 py-4 border-t border-slate-100 dark:border-slate-700">
           <button
             onClick={onClose}
             className="px-4 py-2 text-sm font-medium rounded-lg bg-brand-600 text-white hover:bg-brand-700 transition-colors"
@@ -178,9 +162,7 @@ interface PresetModalProps {
 function PresetModal({ mode, preset, currentOpts, isPending, onSave, onClose }: PresetModalProps) {
   const { t } = useTranslation();
   const [name, setName] = useState(preset?.name ?? "");
-  const [localOpts, setLocalOpts] = useState<UploadOptions>(
-    preset?.profile ?? currentOpts,
-  );
+  const [localOpts, setLocalOpts] = useState<UploadOptions>(preset?.profile ?? currentOpts);
 
   const setOpt =
     (k: keyof UploadOptions) =>
@@ -189,31 +171,20 @@ function PresetModal({ mode, preset, currentOpts, isPending, onSave, onClose }: 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
-          <h2 className="font-semibold text-slate-800">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-700 shrink-0">
+          <h2 className="font-semibold text-slate-800 dark:text-white">
             {mode === "create" ? t("import.preset_new") : t("import.preset_edit")}
           </h2>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-lg hover:bg-slate-100 transition-colors"
-          >
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
             <X className="w-5 h-5 text-slate-400" />
           </button>
         </div>
 
-        {/* Body */}
         <div className="overflow-y-auto px-6 py-5 space-y-5">
-          <Input
-            label={t("import.preset_name_label")}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder={t("import.preset_name_placeholder")}
-          />
-
+          <Input label={t("import.preset_name_label")} value={name} onChange={(e) => setName(e.target.value)} placeholder={t("import.preset_name_placeholder")} />
           <div>
-            <p className="text-sm font-semibold text-slate-700 mb-3">{t("import.csv_profile")}</p>
+            <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">{t("import.csv_profile")}</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <Input label={t("import.label_date_column")} value={localOpts.date_column ?? ""} onChange={setOpt("date_column")} />
               <Input label={t("import.label_date_format")} value={localOpts.date_format ?? ""} onChange={setOpt("date_format")} hint={t("import.date_format_hint")} />
@@ -232,9 +203,9 @@ function PresetModal({ mode, preset, currentOpts, isPending, onSave, onClose }: 
                   type="checkbox"
                   checked={!!localOpts.negate_amount}
                   onChange={(e) => setLocalOpts((o) => ({ ...o, negate_amount: e.target.checked }))}
-                  className="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                  className="rounded border-slate-300 text-brand-600 focus:ring-brand-500 dark:border-slate-600"
                 />
-                <label htmlFor="modal-negate" className="text-sm text-slate-700">
+                <label htmlFor="modal-negate" className="text-sm text-slate-700 dark:text-slate-300">
                   {t("import.negate_amounts")}
                 </label>
               </div>
@@ -242,11 +213,10 @@ function PresetModal({ mode, preset, currentOpts, isPending, onSave, onClose }: 
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-slate-100">
+        <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-slate-100 dark:border-slate-700">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 bg-white hover:bg-slate-50 transition-colors"
+            className="px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 bg-white hover:bg-slate-50 transition-colors dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
           >
             {t("common.cancel")}
           </button>
@@ -274,7 +244,6 @@ export default function ImportPage() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [pendingJobId, setPendingJobId] = useState<number | null>(null);
 
-  // Preset modal state: null = closed; "create" | edit preset
   const [presetModal, setPresetModal] = useState<
     null | { mode: "create" } | { mode: "edit"; preset: ResolvedPreset }
   >(null);
@@ -298,8 +267,6 @@ export default function ImportPage() {
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
       setOpts((o) => ({ ...o, [k]: e.target.value }));
 
-  // ── Queries ─────────────────────────────────────────────────────────────────
-
   const { data: jobs = [] } = useQuery({
     queryKey: ["import-jobs"],
     queryFn: importsApi.list,
@@ -311,9 +278,6 @@ export default function ImportPage() {
     queryFn: presetsApi.list,
   });
 
-  // ── Effects ─────────────────────────────────────────────────────────────────
-
-  // Auto-apply default preset once presets load (only on first load)
   const [defaultApplied, setDefaultApplied] = useState(false);
   useEffect(() => {
     if (defaultApplied || presets.length === 0) return;
@@ -323,7 +287,7 @@ export default function ImportPage() {
       setDefaultApplied(true);
       toast(t("import.preset_default_applied", { name: def.name }), { icon: "⭐" });
     } else {
-      setDefaultApplied(true); // no default → don't try again
+      setDefaultApplied(true);
     }
   }, [presets, defaultApplied, t]);
 
@@ -335,67 +299,40 @@ export default function ImportPage() {
       qc.invalidateQueries({ queryKey: ["inbox"] });
       qc.invalidateQueries({ queryKey: ["inbox-count"] });
       if (job.status === "completed") {
-        toast.success(
-          t("import.import_complete", {
-            processed: job.processed_rows,
-            duplicates: job.duplicate_rows,
-          }),
-        );
+        toast.success(t("import.import_complete", { processed: job.processed_rows, duplicates: job.duplicate_rows }));
       } else {
         toast.error(t("import.import_failed", { error: job.error_message }));
       }
     }
   }, [jobs, pendingJobId, qc, t]);
 
-  // ── Mutations ────────────────────────────────────────────────────────────────
-
   const clearHistoryMutation = useMutation({
     mutationFn: importsApi.clearHistory,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["import-jobs"] });
-      toast.success(t("import.clear_history"));
-    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["import-jobs"] }); toast.success(t("import.clear_history")); },
     onError: (err: Error) => toast.error(err.message),
   });
 
   const uploadMutation = useMutation({
     mutationFn: (file: File) => importsApi.upload(file, opts),
-    onSuccess: (job) => {
-      qc.invalidateQueries({ queryKey: ["import-jobs"] });
-      setPendingJobId(job.id);
-      toast(t("import.processing"), { icon: "⏳" });
-    },
+    onSuccess: (job) => { qc.invalidateQueries({ queryKey: ["import-jobs"] }); setPendingJobId(job.id); toast(t("import.processing"), { icon: "⏳" }); },
     onError: (err: Error) => toast.error(err.message),
   });
 
   const createPresetMutation = useMutation({
-    mutationFn: ({ name, profile }: { name: string; profile: UploadOptions }) =>
-      presetsApi.create(name, profile),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["presets"] });
-      setPresetModal(null);
-      toast.success(t("import.preset_created"));
-    },
+    mutationFn: ({ name, profile }: { name: string; profile: UploadOptions }) => presetsApi.create(name, profile),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["presets"] }); setPresetModal(null); toast.success(t("import.preset_created")); },
     onError: (err: Error) => toast.error(err.message),
   });
 
   const updatePresetMutation = useMutation({
-    mutationFn: ({ id, name, profile }: { id: number; name: string; profile: UploadOptions }) =>
-      presetsApi.update(id, name, profile),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["presets"] });
-      setPresetModal(null);
-      toast.success(t("import.preset_updated"));
-    },
+    mutationFn: ({ id, name, profile }: { id: number; name: string; profile: UploadOptions }) => presetsApi.update(id, name, profile),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["presets"] }); setPresetModal(null); toast.success(t("import.preset_updated")); },
     onError: (err: Error) => toast.error(err.message),
   });
 
   const deletePresetMutation = useMutation({
     mutationFn: (id: number) => presetsApi.delete(id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["presets"] });
-      toast.success(t("import.preset_deleted"));
-    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["presets"] }); toast.success(t("import.preset_deleted")); },
     onError: (err: Error) => toast.error(err.message),
   });
 
@@ -411,14 +348,9 @@ export default function ImportPage() {
     onError: (err: Error) => toast.error(err.message),
   });
 
-  // ── Handlers ─────────────────────────────────────────────────────────────────
-
   const handleFile = (file: File | null) => {
     if (!file) return;
-    if (!file.name.toLowerCase().endsWith(".csv")) {
-      toast.error(t("import.only_csv"));
-      return;
-    }
+    if (!file.name.toLowerCase().endsWith(".csv")) { toast.error(t("import.only_csv")); return; }
     uploadMutation.mutate(file);
   };
 
@@ -436,7 +368,7 @@ export default function ImportPage() {
 
   const handlePresetSave = (name: string, profile: UploadOptions) => {
     if (presetModal?.mode === "edit") {
-      updatePresetMutation.mutate({ id: presetModal.preset.id, name, profile });
+      updatePresetMutation.mutate({ id: (presetModal as { mode: "edit"; preset: ResolvedPreset }).preset.id, name, profile });
     } else {
       createPresetMutation.mutate({ name, profile });
     }
@@ -449,23 +381,17 @@ export default function ImportPage() {
   };
 
   const handleToggleDefault = (preset: ResolvedPreset) => {
-    if (preset.is_default) {
-      clearDefaultMutation.mutate();
-    } else {
-      setDefaultMutation.mutate(preset.id);
-    }
+    if (preset.is_default) clearDefaultMutation.mutate();
+    else setDefaultMutation.mutate(preset.id);
   };
 
-  const isModalPending =
-    createPresetMutation.isPending || updatePresetMutation.isPending;
-
-  // ── Render ───────────────────────────────────────────────────────────────────
+  const isModalPending = createPresetMutation.isPending || updatePresetMutation.isPending;
 
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">{t("import.title")}</h1>
-        <p className="text-sm text-slate-500 mt-0.5">{t("import.subtitle")}</p>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{t("import.title")}</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t("import.subtitle")}</p>
       </div>
 
       {/* Upload zone */}
@@ -478,40 +404,34 @@ export default function ImportPage() {
           card flex flex-col items-center justify-center gap-4 p-12 cursor-pointer
           border-2 border-dashed transition-colors
           ${dragOver
-            ? "border-brand-400 bg-brand-50"
-            : "border-slate-200 hover:border-brand-300 hover:bg-slate-50"
+            ? "border-brand-400 bg-brand-50 dark:bg-brand-950"
+            : "border-slate-200 dark:border-slate-700 hover:border-brand-300 hover:bg-slate-50 dark:hover:bg-slate-700/50"
           }
         `}
       >
-        <input
-          ref={fileRef}
-          type="file"
-          accept=".csv"
-          className="hidden"
-          onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
-        />
+        <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={(e) => handleFile(e.target.files?.[0] ?? null)} />
         {uploadMutation.isPending ? (
           <Loader2 className="w-12 h-12 text-brand-500 animate-spin" />
         ) : (
-          <Upload className="w-12 h-12 text-slate-300" />
+          <Upload className="w-12 h-12 text-slate-300 dark:text-slate-600" />
         )}
         <div className="text-center">
-          <p className="font-semibold text-slate-700">
+          <p className="font-semibold text-slate-700 dark:text-slate-300">
             {uploadMutation.isPending ? t("import.uploading") : t("import.drop_csv")}
           </p>
-          <p className="text-sm text-slate-400 mt-1">{t("import.browse_hint")}</p>
+          <p className="text-sm text-slate-400 dark:text-slate-500 mt-1">{t("import.browse_hint")}</p>
         </div>
       </div>
 
       {/* CSV Profile */}
       <div className="card overflow-hidden">
         <button
-          className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-slate-50 transition-colors"
+          className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
           onClick={() => setShowAdvanced((v) => !v)}
         >
           <div>
-            <p className="font-semibold text-slate-800">{t("import.csv_profile")}</p>
-            <p className="text-xs text-slate-500 mt-0.5">{t("import.csv_profile_hint")}</p>
+            <p className="font-semibold text-slate-800 dark:text-slate-200">{t("import.csv_profile")}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{t("import.csv_profile_hint")}</p>
           </div>
           {showAdvanced ? (
             <ChevronDown className="w-5 h-5 text-slate-400" />
@@ -521,7 +441,7 @@ export default function ImportPage() {
         </button>
 
         {showAdvanced && (
-          <div className="border-t border-slate-100 px-6 py-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="border-t border-slate-100 dark:border-slate-700 px-6 py-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <Input label={t("import.label_date_column")} value={opts.date_column} onChange={set("date_column")} />
             <Input label={t("import.label_date_format")} value={opts.date_format} onChange={set("date_format")} hint={t("import.date_format_hint")} />
             <Input label={t("import.label_amount_column")} value={opts.amount_column} onChange={set("amount_column")} />
@@ -539,11 +459,9 @@ export default function ImportPage() {
                 type="checkbox"
                 checked={opts.negate_amount}
                 onChange={(e) => setOpts((o) => ({ ...o, negate_amount: e.target.checked }))}
-                className="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                className="rounded border-slate-300 text-brand-600 focus:ring-brand-500 dark:border-slate-600"
               />
-              <label htmlFor="negate" className="text-sm text-slate-700">
-                {t("import.negate_amounts")}
-              </label>
+              <label htmlFor="negate" className="text-sm text-slate-700 dark:text-slate-300">{t("import.negate_amounts")}</label>
             </div>
           </div>
         )}
@@ -551,14 +469,13 @@ export default function ImportPage() {
 
       {/* Presets */}
       <div className="card p-5">
-        {/* Section header */}
         <div className="flex items-center justify-between mb-4">
-          <p className="text-sm font-semibold text-slate-700">{t("import.presets")}</p>
+          <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t("import.presets")}</p>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setHelpOpen(true)}
               title={t("import.help_title")}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-colors"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-950 transition-colors"
             >
               <HelpCircle className="w-4 h-4" />
             </button>
@@ -572,67 +489,54 @@ export default function ImportPage() {
           </div>
         </div>
 
-        {/* Empty state */}
         {presets.length === 0 && (
-          <div className="rounded-lg border border-dashed border-slate-200 px-4 py-6 text-center">
-            <p className="text-sm font-medium text-slate-500">{t("import.no_presets")}</p>
-            <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto">
-              {t("import.no_presets_hint")}
-            </p>
+          <div className="rounded-lg border border-dashed border-slate-200 dark:border-slate-700 px-4 py-6 text-center">
+            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{t("import.no_presets")}</p>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-xs mx-auto">{t("import.no_presets_hint")}</p>
           </div>
         )}
 
-        {/* Preset chips */}
         {presets.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {presets.map((preset) => (
               <div
                 key={preset.id}
-                className={`group flex items-center gap-0.5 rounded-lg border bg-white overflow-hidden transition-colors ${
+                className={`group flex items-center gap-0.5 rounded-lg border bg-white dark:bg-slate-700 overflow-hidden transition-colors ${
                   preset.is_default
-                    ? "border-brand-300 ring-1 ring-brand-200"
-                    : "border-slate-200"
+                    ? "border-brand-300 dark:border-brand-600 ring-1 ring-brand-200 dark:ring-brand-700"
+                    : "border-slate-200 dark:border-slate-600"
                 }`}
               >
-                {/* Apply button */}
                 <button
                   onClick={() => applyPreset(preset)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
                 >
-                  {preset.is_default && (
-                    <Star className="w-3 h-3 fill-amber-400 text-amber-400 shrink-0" />
-                  )}
+                  {preset.is_default && <Star className="w-3 h-3 fill-amber-400 text-amber-400 shrink-0" />}
                   {preset.name}
                 </button>
-
-                {/* Set / clear default (star) */}
                 <button
                   onClick={() => handleToggleDefault(preset)}
                   disabled={setDefaultMutation.isPending || clearDefaultMutation.isPending}
                   className={`px-1.5 py-1.5 transition-all disabled:opacity-30 ${
                     preset.is_default
-                      ? "text-amber-400 hover:text-slate-400 hover:bg-slate-50"
-                      : "text-slate-300 hover:text-amber-400 hover:bg-amber-50 opacity-0 group-hover:opacity-100"
+                      ? "text-amber-400 hover:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-600"
+                      : "text-slate-300 hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950 opacity-0 group-hover:opacity-100"
                   }`}
                   title={preset.is_default ? t("import.preset_clear_default") : t("import.preset_set_default")}
                 >
                   <Star className={`w-3 h-3 ${preset.is_default ? "fill-amber-400" : ""}`} />
                 </button>
-
-                {/* Edit */}
                 <button
                   onClick={() => setPresetModal({ mode: "edit", preset })}
-                  className="px-1.5 py-1.5 text-slate-300 hover:text-brand-600 hover:bg-brand-50 opacity-0 group-hover:opacity-100 transition-all"
+                  className="px-1.5 py-1.5 text-slate-300 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-950 opacity-0 group-hover:opacity-100 transition-all"
                   title={t("import.preset_edit")}
                 >
                   <Pencil className="w-3 h-3" />
                 </button>
-
-                {/* Delete */}
                 <button
                   onClick={() => handleDeletePreset(preset)}
                   disabled={deletePresetMutation.isPending}
-                  className="px-1.5 py-1.5 text-slate-300 hover:text-rose-600 hover:bg-rose-50 opacity-0 group-hover:opacity-100 transition-all disabled:opacity-30"
+                  className="px-1.5 py-1.5 text-slate-300 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950 opacity-0 group-hover:opacity-100 transition-all disabled:opacity-30"
                   title={t("common.delete")}
                 >
                   <Trash2 className="w-3 h-3" />
@@ -646,28 +550,21 @@ export default function ImportPage() {
       {/* Import history */}
       {jobs.length > 0 && (
         <div className="card overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-slate-700">{t("import.import_history")}</h2>
+          <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t("import.import_history")}</h2>
             <button
-              onClick={() => {
-                if (confirm(t("import.clear_history_confirm"))) {
-                  clearHistoryMutation.mutate();
-                }
-              }}
+              onClick={() => { if (confirm(t("import.clear_history_confirm"))) clearHistoryMutation.mutate(); }}
               disabled={clearHistoryMutation.isPending}
-              className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-rose-600 transition-colors disabled:opacity-40"
+              className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors disabled:opacity-40"
             >
               <Trash2 className="w-3.5 h-3.5" />
               {t("import.clear_history")}
             </button>
           </div>
-          {jobs.map((job) => (
-            <JobRow key={job.id} job={job} />
-          ))}
+          {jobs.map((job) => <JobRow key={job.id} job={job} />)}
         </div>
       )}
 
-      {/* Preset modal */}
       {presetModal && (
         <PresetModal
           mode={presetModal.mode}
@@ -679,7 +576,6 @@ export default function ImportPage() {
         />
       )}
 
-      {/* Help dialog */}
       {helpOpen && <HelpDialog onClose={() => setHelpOpen(false)} />}
     </div>
   );

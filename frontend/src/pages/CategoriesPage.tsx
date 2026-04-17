@@ -44,7 +44,7 @@ function CategoryForm({
       />
 
       <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium text-slate-700">{t("categories.label_color")}</label>
+        <label className="text-sm font-medium text-slate-700 dark:text-slate-300">{t("categories.label_color")}</label>
         <div className="flex flex-wrap gap-2">
           {PRESET_COLORS.map((color) => (
             <button
@@ -74,9 +74,9 @@ function CategoryForm({
           type="checkbox"
           checked={form.is_income}
           onChange={(e) => setForm((f) => ({ ...f, is_income: e.target.checked }))}
-          className="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+          className="rounded border-slate-300 text-brand-600 focus:ring-brand-500 dark:border-slate-600"
         />
-        <label htmlFor="is_income" className="text-sm font-medium text-slate-700">
+        <label htmlFor="is_income" className="text-sm font-medium text-slate-700 dark:text-slate-300">
           {t("categories.is_income")}
         </label>
       </div>
@@ -102,33 +102,20 @@ export default function CategoriesPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: FormData) =>
-      categoriesApi.create(data as unknown as CategoryCreate),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["categories"] });
-      toast.success(t("categories.created"));
-      setShowCreate(false);
-    },
+    mutationFn: (data: FormData) => categoriesApi.create(data as unknown as CategoryCreate),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["categories"] }); toast.success(t("categories.created")); setShowCreate(false); },
     onError: (err: Error) => toast.error(err.message),
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: FormData }) =>
-      categoriesApi.update(id, data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["categories"] });
-      toast.success(t("categories.updated"));
-      setEditCat(null);
-    },
+    mutationFn: ({ id, data }: { id: number; data: FormData }) => categoriesApi.update(id, data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["categories"] }); toast.success(t("categories.updated")); setEditCat(null); },
     onError: (err: Error) => toast.error(err.message),
   });
 
   const deleteMutation = useMutation({
     mutationFn: categoriesApi.delete,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["categories"] });
-      toast.success(t("categories.deleted"));
-    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["categories"] }); toast.success(t("categories.deleted")); },
     onError: (err: Error) => toast.error(err.message),
   });
 
@@ -137,7 +124,7 @@ export default function CategoriesPage() {
 
   function CategoryCard({ cat }: { cat: Category }) {
     return (
-      <div className="flex items-center gap-4 p-4 border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors">
+      <div className="flex items-center gap-4 p-4 border-b border-slate-50 dark:border-slate-700/50 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
         <div
           className="w-9 h-9 rounded-lg shrink-0 flex items-center justify-center"
           style={{ backgroundColor: `${cat.color}20` }}
@@ -145,8 +132,8 @@ export default function CategoriesPage() {
           <div className="w-4 h-4 rounded-full" style={{ backgroundColor: cat.color }} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-slate-900">{cat.name}</p>
-          <p className="text-xs text-slate-500">
+          <p className="font-medium text-slate-900 dark:text-slate-100">{cat.name}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             {t("categories.transaction_count", { count: cat.transaction_count })}
             {cat.is_default && ` · ${t("categories.is_default")}`}
           </p>
@@ -154,7 +141,7 @@ export default function CategoriesPage() {
         <div className="flex items-center gap-1">
           <button
             onClick={() => setEditCat(cat)}
-            className="p-1.5 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded transition-colors"
+            className="p-1.5 text-slate-400 hover:text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-950 rounded transition-colors"
           >
             <Pencil className="w-4 h-4" />
           </button>
@@ -164,7 +151,7 @@ export default function CategoriesPage() {
                 deleteMutation.mutate(cat.id);
               }
             }}
-            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
+            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950 rounded transition-colors"
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -177,8 +164,8 @@ export default function CategoriesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">{t("categories.title")}</h1>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{t("categories.title")}</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
             {t("categories.subtitle", { count: categories.length })}
           </p>
         </div>
@@ -194,9 +181,9 @@ export default function CategoriesPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="card overflow-hidden">
-            <div className="px-4 py-3 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
+            <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex items-center gap-2">
               <Badge variant="success">{t("categories.income")}</Badge>
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-slate-500 dark:text-slate-400">
                 {t("categories.subtitle", { count: income.length })}
               </span>
             </div>
@@ -210,9 +197,9 @@ export default function CategoriesPage() {
           </div>
 
           <div className="card overflow-hidden">
-            <div className="px-4 py-3 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
+            <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex items-center gap-2">
               <Badge variant="danger">{t("categories.expense")}</Badge>
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-slate-500 dark:text-slate-400">
                 {t("categories.subtitle", { count: expense.length })}
               </span>
             </div>

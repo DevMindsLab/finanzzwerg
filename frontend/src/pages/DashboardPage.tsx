@@ -17,6 +17,7 @@ import {
 } from "recharts";
 import { TrendingUp, TrendingDown, Minus, AlertCircle, ArrowRight } from "lucide-react";
 import { dashboardApi } from "@/api/dashboard";
+import { useTheme } from "@/contexts/ThemeContext";
 import { formatCurrency } from "@/lib/utils";
 
 function StatCard({
@@ -33,18 +34,19 @@ function StatCard({
   return (
     <div className="card p-6">
       <div className="flex items-center justify-between mb-3">
-        <p className="text-sm font-medium text-slate-500">{label}</p>
+        <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{label}</p>
         <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${colorClass}`}>
           <Icon className="w-5 h-5" />
         </div>
       </div>
-      <p className="text-2xl font-bold text-slate-900">{value}</p>
+      <p className="text-2xl font-bold text-slate-900 dark:text-white">{value}</p>
     </div>
   );
 }
 
 export default function DashboardPage() {
   const { t } = useTranslation();
+  const { theme } = useTheme();
   const navigate = useNavigate();
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
@@ -74,6 +76,15 @@ export default function DashboardPage() {
     queryKey: ["dashboard", year, month],
     queryFn: () => dashboardApi.get(year, month),
   });
+
+  const isDark = theme === "dark";
+  const tooltipStyle = isDark
+    ? { borderRadius: 8, border: "1px solid #334155", backgroundColor: "#1e293b", color: "#f1f5f9", fontSize: 13 }
+    : { borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13 };
+  const axisColor = isDark ? "#64748b" : "#94a3b8";
+  const gridColor = isDark ? "#1e293b" : "#f1f5f9";
+
+  const selectClass = "rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100";
 
   if (isLoading) {
     return (
@@ -107,28 +118,20 @@ export default function DashboardPage() {
   }));
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">{t("dashboard.title")}</h1>
-          <p className="text-sm text-slate-500 mt-0.5">{t("dashboard.subtitle")}</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{t("dashboard.title")}</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t("dashboard.subtitle")}</p>
         </div>
         <div className="flex items-center gap-2">
-          <select
-            value={month}
-            onChange={(e) => setMonth(Number(e.target.value))}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
-          >
+          <select value={month} onChange={(e) => setMonth(Number(e.target.value))} className={selectClass}>
             {months.map((name, i) => (
               <option key={i} value={i + 1}>{name}</option>
             ))}
           </select>
-          <select
-            value={year}
-            onChange={(e) => setYear(Number(e.target.value))}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
-          >
+          <select value={year} onChange={(e) => setYear(Number(e.target.value))} className={selectClass}>
             {[today.getFullYear() - 2, today.getFullYear() - 1, today.getFullYear()].map((y) => (
               <option key={y} value={y}>{y}</option>
             ))}
@@ -140,7 +143,7 @@ export default function DashboardPage() {
       {uncategorized_count > 0 && (
         <a
           href="/inbox"
-          className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 hover:bg-amber-100 transition-colors"
+          className="flex items-center gap-3 p-4 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900 transition-colors"
         >
           <AlertCircle className="w-5 h-5 shrink-0 text-amber-500" />
           <p className="text-sm font-medium">
@@ -151,18 +154,18 @@ export default function DashboardPage() {
       )}
 
       {/* Stat cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
         <StatCard
           label={t("dashboard.income")}
           value={formatCurrency(cm.income)}
           icon={TrendingUp}
-          colorClass="bg-emerald-100 text-emerald-600"
+          colorClass="bg-emerald-100 text-emerald-600 dark:bg-emerald-900 dark:text-emerald-400"
         />
         <StatCard
           label={t("dashboard.expenses")}
           value={formatCurrency(cm.expenses)}
           icon={TrendingDown}
-          colorClass="bg-rose-100 text-rose-600"
+          colorClass="bg-rose-100 text-rose-600 dark:bg-rose-900 dark:text-rose-400"
         />
         <StatCard
           label={t("dashboard.balance")}
@@ -170,26 +173,23 @@ export default function DashboardPage() {
           icon={Minus}
           colorClass={
             parseFloat(cm.balance) >= 0
-              ? "bg-sky-100 text-sky-600"
-              : "bg-orange-100 text-orange-600"
+              ? "bg-sky-100 text-sky-600 dark:bg-sky-900 dark:text-sky-400"
+              : "bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-400"
           }
         />
       </div>
 
       {/* Charts row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6">
         {/* Bar chart */}
-        <div className="card p-6 lg:col-span-2">
-          <h2 className="text-sm font-semibold text-slate-700 mb-5">{t("dashboard.monthly_overview")}</h2>
-          <ResponsiveContainer width="100%" height={240}>
+        <div className="card p-5 sm:p-6 lg:col-span-2">
+          <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-5">{t("dashboard.monthly_overview")}</h2>
+          <ResponsiveContainer width="100%" height={220}>
             <BarChart data={barData} barCategoryGap="30%">
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis dataKey="name" tick={{ fontSize: 12, fill: "#94a3b8" }} />
-              <YAxis tick={{ fontSize: 12, fill: "#94a3b8" }} />
-              <Tooltip
-                formatter={(v: number) => formatCurrency(v)}
-                contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13 }}
-              />
+              <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+              <XAxis dataKey="name" tick={{ fontSize: 12, fill: axisColor }} />
+              <YAxis tick={{ fontSize: 12, fill: axisColor }} />
+              <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={tooltipStyle} />
               <Bar dataKey="income" name={t("dashboard.income")} fill="#10b981" radius={[4, 4, 0, 0]} />
               <Bar dataKey="expenses" name={t("dashboard.expenses")} fill="#f43f5e" radius={[4, 4, 0, 0]} />
             </BarChart>
@@ -197,37 +197,22 @@ export default function DashboardPage() {
         </div>
 
         {/* Pie chart */}
-        <div className="card p-6">
-          <h2 className="text-sm font-semibold text-slate-700 mb-5">{t("dashboard.expenses_by_category")}</h2>
+        <div className="card p-5 sm:p-6">
+          <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-5">{t("dashboard.expenses_by_category")}</h2>
           {pieData.length === 0 ? (
             <div className="flex items-center justify-center h-48 text-slate-400 text-sm">
               {t("dashboard.no_expense_data")}
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height={240}>
+            <ResponsiveContainer width="100%" height={220}>
               <PieChart>
-                <Pie
-                  data={pieData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="45%"
-                  outerRadius={80}
-                  strokeWidth={2}
-                >
+                <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="45%" outerRadius={75} strokeWidth={2}>
                   {pieData.map((entry, i) => (
                     <Cell key={i} fill={entry.color} />
                   ))}
                 </Pie>
-                <Legend
-                  iconType="circle"
-                  iconSize={8}
-                  wrapperStyle={{ fontSize: 12 }}
-                />
-                <Tooltip
-                  formatter={(v: number) => formatCurrency(v)}
-                  contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13 }}
-                />
+                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, color: axisColor }} />
+                <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={tooltipStyle} />
               </PieChart>
             </ResponsiveContainer>
           )}
@@ -237,118 +222,107 @@ export default function DashboardPage() {
       {/* Income breakdown table */}
       {income_breakdown.length > 0 && (
         <div className="card overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100">
-            <h2 className="text-sm font-semibold text-slate-700">{t("dashboard.income_breakdown")}</h2>
+          <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700">
+            <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t("dashboard.income_breakdown")}</h2>
           </div>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-100">
-                <th className="text-left px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">{t("dashboard.col_category")}</th>
-                <th className="text-right px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">{t("dashboard.col_transactions")}</th>
-                <th className="text-right px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">{t("dashboard.col_total")}</th>
-                <th className="px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">{t("dashboard.col_share")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {income_breakdown.map((row) => (
-                <tr
-                  key={row.category_id ?? "uncategorized"}
-                  onClick={() => handleIncomeClick(row.category_id)}
-                  title={t("dashboard.click_for_details")}
-                  className="border-b border-slate-50 last:border-0 hover:bg-slate-50 cursor-pointer group"
-                >
-                  <td className="px-6 py-3">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: row.category_color }} />
-                      <span className="font-medium text-slate-800 group-hover:text-brand-600">{row.category_name}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-3 text-right text-slate-600">{row.transaction_count}</td>
-                  <td className="px-6 py-3 text-right font-medium text-emerald-600">
-                    {formatCurrency(row.total)}
-                  </td>
-                  <td className="px-6 py-3">
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 bg-slate-100 rounded-full h-1.5 max-w-[80px]">
-                        <div
-                          className="h-1.5 rounded-full"
-                          style={{ width: `${Math.min(row.percentage, 100)}%`, backgroundColor: row.category_color }}
-                        />
-                      </div>
-                      <span className="text-slate-500 text-xs w-10 text-right">{row.percentage.toFixed(1)}%</span>
-                      <span className="flex items-center gap-1 text-xs text-brand-600 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                        {t("dashboard.click_for_details")}
-                        <ArrowRight className="w-3 h-3" />
-                      </span>
-                    </div>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-100 dark:border-slate-700">
+                  <th className="text-left px-6 py-3 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t("dashboard.col_category")}</th>
+                  <th className="text-right px-6 py-3 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t("dashboard.col_transactions")}</th>
+                  <th className="text-right px-6 py-3 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t("dashboard.col_total")}</th>
+                  <th className="px-6 py-3 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t("dashboard.col_share")}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {income_breakdown.map((row) => (
+                  <tr
+                    key={row.category_id ?? "uncategorized"}
+                    onClick={() => handleIncomeClick(row.category_id)}
+                    title={t("dashboard.click_for_details")}
+                    className="border-b border-slate-50 dark:border-slate-700/50 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer group"
+                  >
+                    <td className="px-6 py-3">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: row.category_color }} />
+                        <span className="font-medium text-slate-800 dark:text-slate-200 group-hover:text-brand-600 dark:group-hover:text-brand-400">{row.category_name}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-3 text-right text-slate-600 dark:text-slate-400">{row.transaction_count}</td>
+                    <td className="px-6 py-3 text-right font-medium text-emerald-600 dark:text-emerald-400">{formatCurrency(row.total)}</td>
+                    <td className="px-6 py-3">
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 bg-slate-100 dark:bg-slate-700 rounded-full h-1.5 max-w-[80px]">
+                          <div className="h-1.5 rounded-full" style={{ width: `${Math.min(row.percentage, 100)}%`, backgroundColor: row.category_color }} />
+                        </div>
+                        <span className="text-slate-500 dark:text-slate-400 text-xs w-10 text-right">{row.percentage.toFixed(1)}%</span>
+                        <span className="flex items-center gap-1 text-xs text-brand-600 dark:text-brand-400 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                          {t("dashboard.click_for_details")}
+                          <ArrowRight className="w-3 h-3" />
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
       {/* Expense breakdown table */}
       {expense_breakdown.length > 0 && (
         <div className="card overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100">
-            <h2 className="text-sm font-semibold text-slate-700">{t("dashboard.expense_breakdown")}</h2>
+          <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700">
+            <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t("dashboard.expense_breakdown")}</h2>
           </div>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-100">
-                <th className="text-left px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">{t("dashboard.col_category")}</th>
-                <th className="text-right px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">{t("dashboard.col_transactions")}</th>
-                <th className="text-right px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">{t("dashboard.col_total")}</th>
-                <th className="px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">{t("dashboard.col_share")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {expense_breakdown.map((row) => (
-                <tr
-                  key={row.category_id ?? "uncategorized"}
-                  onClick={() => handleCategoryClick(row.category_id)}
-                  title={t("dashboard.click_for_details")}
-                  className="border-b border-slate-50 last:border-0 hover:bg-slate-50 cursor-pointer group"
-                >
-                  <td className="px-6 py-3">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className="w-2.5 h-2.5 rounded-full shrink-0"
-                        style={{ backgroundColor: row.category_color }}
-                      />
-                      <span className="font-medium text-slate-800 group-hover:text-brand-600">{row.category_name}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-3 text-right text-slate-600">{row.transaction_count}</td>
-                  <td className="px-6 py-3 text-right font-medium text-rose-600">
-                    {formatCurrency(row.total)}
-                  </td>
-                  <td className="px-6 py-3">
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 bg-slate-100 rounded-full h-1.5 max-w-[80px]">
-                        <div
-                          className="h-1.5 rounded-full"
-                          style={{
-                            width: `${Math.min(row.percentage, 100)}%`,
-                            backgroundColor: row.category_color,
-                          }}
-                        />
-                      </div>
-                      <span className="text-slate-500 text-xs w-10 text-right">
-                        {row.percentage.toFixed(1)}%
-                      </span>
-                      <span className="flex items-center gap-1 text-xs text-brand-600 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                        {t("dashboard.click_for_details")}
-                        <ArrowRight className="w-3 h-3" />
-                      </span>
-                    </div>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-100 dark:border-slate-700">
+                  <th className="text-left px-6 py-3 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t("dashboard.col_category")}</th>
+                  <th className="text-right px-6 py-3 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t("dashboard.col_transactions")}</th>
+                  <th className="text-right px-6 py-3 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t("dashboard.col_total")}</th>
+                  <th className="px-6 py-3 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t("dashboard.col_share")}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {expense_breakdown.map((row) => (
+                  <tr
+                    key={row.category_id ?? "uncategorized"}
+                    onClick={() => handleCategoryClick(row.category_id)}
+                    title={t("dashboard.click_for_details")}
+                    className="border-b border-slate-50 dark:border-slate-700/50 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer group"
+                  >
+                    <td className="px-6 py-3">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: row.category_color }} />
+                        <span className="font-medium text-slate-800 dark:text-slate-200 group-hover:text-brand-600 dark:group-hover:text-brand-400">{row.category_name}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-3 text-right text-slate-600 dark:text-slate-400">{row.transaction_count}</td>
+                    <td className="px-6 py-3 text-right font-medium text-rose-600 dark:text-rose-400">{formatCurrency(row.total)}</td>
+                    <td className="px-6 py-3">
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 bg-slate-100 dark:bg-slate-700 rounded-full h-1.5 max-w-[80px]">
+                          <div
+                            className="h-1.5 rounded-full"
+                            style={{ width: `${Math.min(row.percentage, 100)}%`, backgroundColor: row.category_color }}
+                          />
+                        </div>
+                        <span className="text-slate-500 dark:text-slate-400 text-xs w-10 text-right">{row.percentage.toFixed(1)}%</span>
+                        <span className="flex items-center gap-1 text-xs text-brand-600 dark:text-brand-400 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                          {t("dashboard.click_for_details")}
+                          <ArrowRight className="w-3 h-3" />
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
