@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Outlet } from "react-router-dom";
-import { Menu, BarChart3 } from "lucide-react";
+import { Menu } from "lucide-react";
+import BrandIcon from "@/components/ui/BrandIcon";
 import Sidebar from "./Sidebar";
 
 export default function Layout() {
@@ -31,9 +32,7 @@ export default function Layout() {
             <Menu className="w-5 h-5" />
           </button>
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-brand-600 flex items-center justify-center">
-              <BarChart3 className="w-4 h-4 text-white" />
-            </div>
+            <BrandIcon className="w-7 h-7" />
             <span className="text-white font-semibold text-base tracking-tight">Finanzzwerg</span>
           </div>
           {/* Spacer to keep logo centred */}

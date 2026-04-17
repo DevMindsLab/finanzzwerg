@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { BarChart3 } from "lucide-react";
+import BrandIcon from "@/components/ui/BrandIcon";
 import { authApi } from "@/api/auth";
 import { useAuth } from "@/contexts/AuthContext";
 import Input from "@/components/ui/Input";
@@ -37,9 +37,7 @@ export default function RegisterPage() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="flex items-center justify-center gap-2.5 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center">
-            <BarChart3 className="w-5 h-5 text-white" />
-          </div>
+          <BrandIcon className="w-10 h-10" />
           <span className="text-white font-semibold text-xl tracking-tight">Finanzzwerg</span>
         </div>
 

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
+import BrandIcon from "@/components/ui/BrandIcon";
 import {
   BarChart3,
   Inbox,
@@ -108,9 +109,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       {/* Logo + mobile close button */}
       <div className="px-4 py-5 border-b border-slate-800 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center">
-            <BarChart3 className="w-4 h-4 text-white" />
-          </div>
+          <BrandIcon className="w-8 h-8" />
           <span className="text-white font-semibold text-lg tracking-tight">
             Finanzzwerg
           </span>
