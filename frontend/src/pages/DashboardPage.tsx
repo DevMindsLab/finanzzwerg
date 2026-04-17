@@ -81,6 +81,8 @@ export default function DashboardPage() {
   const tooltipStyle = isDark
     ? { borderRadius: 8, border: "1px solid #334155", backgroundColor: "#1e293b", color: "#f1f5f9", fontSize: 13 }
     : { borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13 };
+  const tooltipLabelStyle = isDark ? { color: "#f1f5f9" } : {};
+  const tooltipItemStyle  = isDark ? { color: "#cbd5e1" } : {};
   const axisColor = isDark ? "#64748b" : "#94a3b8";
   const gridColor = isDark ? "#1e293b" : "#f1f5f9";
 
@@ -189,7 +191,7 @@ export default function DashboardPage() {
               <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
               <XAxis dataKey="name" tick={{ fontSize: 12, fill: axisColor }} />
               <YAxis tick={{ fontSize: 12, fill: axisColor }} />
-              <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={tooltipStyle} />
+              <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} />
               <Bar dataKey="income" name={t("dashboard.income")} fill="#10b981" radius={[4, 4, 0, 0]} />
               <Bar dataKey="expenses" name={t("dashboard.expenses")} fill="#f43f5e" radius={[4, 4, 0, 0]} />
             </BarChart>
@@ -212,7 +214,7 @@ export default function DashboardPage() {
                   ))}
                 </Pie>
                 <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, color: axisColor }} />
-                <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={tooltipStyle} />
+                <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} />
               </PieChart>
             </ResponsiveContainer>
           )}
