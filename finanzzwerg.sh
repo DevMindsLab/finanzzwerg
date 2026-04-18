@@ -316,9 +316,10 @@ https://download.docker.com/linux/${DOCKER_REPO_DISTRO} ${DOCKER_CODENAME} stabl
 
 install_docker_fedora() {
   info "Installing Docker (Fedora)..."
-  $SUDO dnf -y -q install dnf-plugins-core
-  $SUDO dnf config-manager --add-repo \
-    https://download.docker.com/linux/fedora/docker-ce.repo
+  # Use curl to add the repo — avoids dnf config-manager syntax differences
+  # between DNF4 (--add-repo) and DNF5 (addrepo --from-repofile) on Fedora 41+
+  curl -fsSL https://download.docker.com/linux/fedora/docker-ce.repo \
+    | $SUDO tee /etc/yum.repos.d/docker-ce.repo > /dev/null
   $SUDO dnf install -y -q \
     docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 }
