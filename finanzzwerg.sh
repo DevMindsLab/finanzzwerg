@@ -129,6 +129,25 @@ check_prerequisites() {
 }
 
 # =============================================================================
+#  SAFETY — Warn + confirm when executed via a pipe (curl | bash)
+# =============================================================================
+check_pipe_run() {
+  [[ -t 0 ]] && return   # stdin is a real terminal — fine
+
+  echo ""
+  echo -e "  ${YELLOW}${BOLD}⚠  You are running this script via a pipe (e.g. curl | bash).${NC}"
+  echo -e "  ${YELLOW}   For security, consider downloading and inspecting it first:${NC}"
+  echo ""
+  echo -e "    ${BOLD}curl -fsSL https://raw.githubusercontent.com/DevMindsLab/finanzzwerg/main/finanzzwerg.sh -o finanzzwerg.sh${NC}"
+  echo -e "    ${BOLD}less finanzzwerg.sh${NC}   ${DIM}# inspect${NC}"
+  echo -e "    ${BOLD}bash finanzzwerg.sh${NC}   ${DIM}# then run${NC}"
+  echo ""
+  echo -ne "  ${BOLD}Continue anyway? [y/N] ${NC}"
+  read -r confirm </dev/tty
+  [[ "${confirm,,}" == "y" ]] || { echo ""; info "Aborted."; echo ""; exit 0; }
+}
+
+# =============================================================================
 #  BOOTSTRAP — Clone repo when script is run standalone (outside project dir)
 # =============================================================================
 bootstrap_if_needed() {
@@ -592,7 +611,7 @@ start_services() {
 wait_for_services() {
   section "Waiting for services to become healthy"
 
-  local max_wait=120
+  local max_wait=300
   local elapsed=0
   local interval=3
 
@@ -628,6 +647,8 @@ wait_for_services() {
 # =============================================================================
 print_summary() {
   local cmd_display="${DOCKER_CMD[*]}"
+  local ip
+  ip="$(hostname -I 2>/dev/null | awk '{print $1}')"
 
   divider
   echo ""
@@ -635,6 +656,9 @@ print_summary() {
   echo ""
   echo -e "  ${BOLD}URLs${NC}"
   echo -e "    ${CYAN}Frontend${NC}   →  http://localhost"
+  if [[ -n "$ip" && "$ip" != "127.0.0.1" ]]; then
+    echo -e "               →  http://${ip}   ${DIM}(network)${NC}"
+  fi
   echo -e "    ${CYAN}API docs${NC}   →  http://localhost:${BACKEND_PORT}/api/docs"
   echo ""
   echo -e "  ${BOLD}Management${NC}"
@@ -706,9 +730,12 @@ cmd_update() {
   if [[ -d "$SCRIPT_DIR/.git" ]]; then
     local before_hash after_hash
     before_hash="$(git -C "$SCRIPT_DIR" rev-parse HEAD 2>/dev/null || true)"
+    info "Stashing local changes (if any)..."
+    git -C "$SCRIPT_DIR" stash 2>/dev/null || true
     info "Running git pull..."
-    git -C "$SCRIPT_DIR" pull --ff-only 2>&1 \
-      || warn "git pull failed — check for local modifications or network issues. Rebuilding with current code."
+    git -C "$SCRIPT_DIR" pull \
+      || warn "git pull failed — check network or repo access. Rebuilding with current code."
+    git -C "$SCRIPT_DIR" stash pop 2>/dev/null || true
     after_hash="$(git -C "$SCRIPT_DIR" rev-parse HEAD 2>/dev/null || true)"
     if [[ "$before_hash" == "$after_hash" ]]; then
       ok "Already up to date"
@@ -874,6 +901,7 @@ banner
 case "$COMMAND" in
   # ── First-time installation ─────────────────────────────────────────────────
   install)
+    check_pipe_run
     bootstrap_if_needed
     check_prerequisites
     detect_os
