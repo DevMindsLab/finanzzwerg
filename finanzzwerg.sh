@@ -39,7 +39,7 @@ banner() {
     ╚═╝     ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚═╝  ╚═══╝╚══════╝╚══════╝ ╚══╝╚══╝ ╚══════╝╚═╝  ╚═╝ ╚═════╝
 EOF
   echo -e "${NC}"
-  echo -e "  ${BOLD}Self-hosted personal finance management  •  v0.3.0${NC}"
+  echo -e "  ${BOLD}Self-hosted personal finance management  •  v${VERSION}${NC}"
   echo -e "  ${DIM}Usage: ./finanzzwerg.sh [install|start|stop|update|uninstall]${NC}"
   echo ""
   divider
@@ -52,6 +52,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_FILE="$SCRIPT_DIR/.env"
 COMPOSE_FILE="$SCRIPT_DIR/docker-compose.yml"
 REPO_URL="https://github.com/DevMindsLab/finanzzwerg"
+VERSION="0.3.0"
 FRONTEND_PORT=80
 BACKEND_PORT=8000
 DB_PORT=5432
