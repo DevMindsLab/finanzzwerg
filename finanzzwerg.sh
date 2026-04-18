@@ -39,7 +39,7 @@ banner() {
     ╚═╝     ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚═╝  ╚═══╝╚══════╝╚══════╝ ╚══╝╚══╝ ╚══════╝╚═╝  ╚═╝ ╚═════╝
 EOF
   echo -e "${NC}"
-  echo -e "  ${BOLD}Self-hosted personal finance management  •  v0.1.0${NC}"
+  echo -e "  ${BOLD}Self-hosted personal finance management  •  v0.3.0${NC}"
   echo -e "  ${DIM}Usage: ./finanzzwerg.sh [install|start|stop|update|uninstall]${NC}"
   echo ""
   divider
@@ -51,6 +51,7 @@ EOF
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_FILE="$SCRIPT_DIR/.env"
 COMPOSE_FILE="$SCRIPT_DIR/docker-compose.yml"
+REPO_URL="https://github.com/DevMindsLab/finanzzwerg"
 FRONTEND_PORT=80
 BACKEND_PORT=8000
 DB_PORT=5432
@@ -124,6 +125,61 @@ check_prerequisites() {
   fi
 
   ok "Core utilities present"
+}
+
+# =============================================================================
+#  BOOTSTRAP — Clone repo when script is run standalone (outside project dir)
+# =============================================================================
+bootstrap_if_needed() {
+  # Already inside the project — nothing to do
+  [[ -f "$COMPOSE_FILE" ]] && return
+
+  section "Bootstrap"
+  info "Script is not running from the Finanzzwerg project root."
+  info "Cloning the repository automatically..."
+
+  # Minimal sudo setup for package installs
+  if [[ $EUID -ne 0 ]] && command -v sudo &>/dev/null; then
+    SUDO="sudo"
+    sudo -v 2>/dev/null || true
+  fi
+
+  # Install git if missing
+  if ! command -v git &>/dev/null; then
+    info "git not found — installing..."
+    if   command -v apt-get &>/dev/null; then $SUDO apt-get update -qq && $SUDO apt-get install -y -qq git
+    elif command -v dnf     &>/dev/null; then $SUDO dnf install -y -q git
+    elif command -v yum     &>/dev/null; then $SUDO yum install -y -q git
+    elif command -v pacman  &>/dev/null; then $SUDO pacman -Sy --noconfirm --needed git
+    elif command -v zypper  &>/dev/null; then $SUDO zypper --non-interactive install git
+    else die "git is not installed and no supported package manager was found.\nPlease install git manually and re-run."
+    fi
+    command -v git &>/dev/null || die "git installation failed. Please install it manually."
+    ok "git installed"
+  else
+    ok "git is available"
+  fi
+
+  # Ask for install directory
+  local default_dir="$HOME/finanzzwerg"
+  echo ""
+  printf "  Install directory [%s]: " "$default_dir"
+  read -r install_dir </dev/tty
+  install_dir="${install_dir:-$default_dir}"
+
+  if [[ -f "$install_dir/docker-compose.yml" ]]; then
+    ok "Project already present at ${install_dir}"
+  elif [[ -d "$install_dir" ]]; then
+    die "Directory '${install_dir}' exists but is not a Finanzzwerg project.\nChoose a different path or remove it first."
+  else
+    info "Cloning ${REPO_URL} into ${install_dir} ..."
+    git clone "$REPO_URL" "$install_dir" \
+      || die "Clone failed. Check your internet connection."
+    ok "Repository cloned"
+  fi
+
+  info "Handing off to the project script..."
+  exec bash "$install_dir/finanzzwerg.sh" install
 }
 
 # =============================================================================
@@ -817,6 +873,7 @@ banner
 case "$COMMAND" in
   # ── First-time installation ─────────────────────────────────────────────────
   install)
+    bootstrap_if_needed
     check_prerequisites
     detect_os
     ensure_docker
