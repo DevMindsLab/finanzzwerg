@@ -63,14 +63,22 @@ Finanzzwerg is designed for people who:
 
 ### One-command setup
 
+Download the script and run it — everything else (git, Docker, the repo itself) is handled automatically:
+
 ```bash
-git clone <your-repo-url> finanzzwerg
-cd finanzzwerg
-bash finanzzwerg.sh install
+# with curl
+curl -fsSL https://raw.githubusercontent.com/DevMindsLab/finanzzwerg/main/finanzzwerg.sh -o finanzzwerg.sh
+bash finanzzwerg.sh
+
+# with wget
+wget -q https://raw.githubusercontent.com/DevMindsLab/finanzzwerg/main/finanzzwerg.sh
+bash finanzzwerg.sh
 ```
 
 The script will:
 
+* install `git` (if missing)
+* clone the repository to `~/finanzzwerg` (or a path you choose)
 * install Docker (if missing)
 * generate a secure `.env`
 * build and start all services

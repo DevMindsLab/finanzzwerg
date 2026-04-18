@@ -463,7 +463,7 @@ generate_env() {
   fi
 
   # Auto-detect git remote URL
-  git_url="https://github.com/your-org/finanzzwerg"
+  git_url="$REPO_URL"
   if command -v git &>/dev/null && [[ -d "$SCRIPT_DIR/.git" ]]; then
     local detected_url
     detected_url="$(git -C "$SCRIPT_DIR" remote get-url origin 2>/dev/null || true)"
