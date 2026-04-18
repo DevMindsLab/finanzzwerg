@@ -161,6 +161,8 @@ export default function InboxPage() {
         priority: 0,
       }),
     onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["inbox"] });
+      qc.invalidateQueries({ queryKey: ["inbox-count"] });
       toast.success(t("inbox.rule_created"));
       setRuleSuggestion(null);
     },

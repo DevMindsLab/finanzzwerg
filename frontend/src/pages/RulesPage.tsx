@@ -107,7 +107,13 @@ export default function RulesPage() {
         name: data.name, pattern: data.pattern, match_type: data.match_type,
         category_id: parseInt(data.category_id), is_active: data.is_active, priority: parseInt(data.priority),
       } as RuleCreate),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["rules"] }); toast.success(t("rules.created")); setShowCreate(false); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["rules"] });
+      qc.invalidateQueries({ queryKey: ["inbox"] });
+      qc.invalidateQueries({ queryKey: ["inbox-count"] });
+      toast.success(t("rules.created"));
+      setShowCreate(false);
+    },
     onError: (err: Error) => toast.error(err.message),
   });
 
@@ -117,7 +123,13 @@ export default function RulesPage() {
         name: data.name, pattern: data.pattern, match_type: data.match_type,
         category_id: parseInt(data.category_id), is_active: data.is_active, priority: parseInt(data.priority),
       } as RuleUpdate),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["rules"] }); toast.success(t("rules.updated")); setEditRule(null); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["rules"] });
+      qc.invalidateQueries({ queryKey: ["inbox"] });
+      qc.invalidateQueries({ queryKey: ["inbox-count"] });
+      toast.success(t("rules.updated"));
+      setEditRule(null);
+    },
     onError: (err: Error) => toast.error(err.message),
   });
 
