@@ -61,6 +61,15 @@ Finanzzwerg is designed for people who:
 * Linux server (Ubuntu, Debian, Fedora, RHEL, Arch, openSUSE)
 * Internet access
 
+### Tested on
+
+| Distribution | Status |
+| ------------ | ------ |
+| Debian 12    | ✅ Tested |
+| Ubuntu 24.04 | ✅ Tested |
+| Fedora 43    | ✅ Tested |
+| RHEL / Arch / openSUSE | supported, not yet tested |
+
 ### One-command setup
 
 Download the script and run it — everything else (git, Docker, the repo itself) is handled automatically:
